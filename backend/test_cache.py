@@ -41,11 +41,6 @@ class CacheTestCase(unittest.TestCase):
         self.cache['dict'] = dict()
         self.cache.get('dict', {})['integer'] = 1
         self.assertEqual(self.cache.get('dict'), {'integer':1}, "failed to store dict object")
-        def gen():
-            cnt = 0
-            while True:
-                yield cnt
-                cnt += 1
 
 if __name__ == "__main__":
     unittest.main()
