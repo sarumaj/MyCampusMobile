@@ -89,7 +89,8 @@ class Authenticator(Cache, ContextManager):
         verbose: Optional[bool] = False, 
         max_len:int, 
         max_age:int, 
-        items: Optional[dict]=None
+        items: Optional[dict]=None,
+        destination: Optional[str]=None,
     ):
         """
         Initliazes internal cache. Can be used as context manager.
@@ -100,7 +101,7 @@ class Authenticator(Cache, ContextManager):
             self, *streams, 
             filepath=filepath, filename=filename, emit=emit,
             verbose=verbose, max_len=max_len, max_age=max_age,
-            items=items
+            items=items, destination=destination
         )
         # start a cookie based session
         self._session = requests.Session()

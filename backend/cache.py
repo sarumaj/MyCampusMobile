@@ -80,7 +80,8 @@ class Cache(ExpiringDict, Logger):
         verbose: Optional[bool] = False, 
         max_len:int, 
         max_age:int, 
-        items: Optional[dict]=None
+        items: Optional[dict]=None,
+        destination: Optional[str]=None,
     ):
         """
         Create a cache instance. 
@@ -103,6 +104,8 @@ class Cache(ExpiringDict, Logger):
         """
         ExpiringDict.__init__(self, max_len=max_len, max_age_seconds=max_age, items=items)
         Logger.__init__(self, *streams, filepath=filepath, filename=filename, emit=emit, verbose=verbose)
+        if destination:
+            self.destination = destination
         if Cache.get_sqlite3_thread_safety(self.destination) == 3:
             check_same_thread = False
         else:
