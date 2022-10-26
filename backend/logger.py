@@ -124,9 +124,3 @@ class Logger(logging.LoggerAdapter):
             logger.addHandler(handler)
         # adapt logger to include custom content in the log messages
         super().__init__(logger, extra={'user': user if user else os.getlogin()})
-
-
-if __name__ == '__main__':
-    logger = Logger(filepath=__file__, verbose=True)
-    logger.info('Test')
-    logger.debug('Test')
