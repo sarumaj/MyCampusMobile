@@ -120,7 +120,7 @@ class CourseBrowser(Authenticator):
 
         soup = BeautifulSoup(response.text, 'html.parser')
         self[self.username]['resources'] = {
-            **self.get('resources', dict()),
+            **self[self.username].get('resources', dict()),
             **{
                     course_id: [
                     {
@@ -268,7 +268,7 @@ class CourseBrowser(Authenticator):
         self.debug("Requesting graded curriculum entries")
         response = self._session.get(
             "https://care-fs.iubh.de/ajax/4713/CourseInscriptionCurricular/DefaultController/fetchCurriculumGrades",
-            params={"bookindId": self.get('booking_id')}
+            params={"bookindId": self[self.username].get('booking_id')}
         )
         assert response.status_code == 200, "server responded with %d (%s)" % (response.status_code, response.text)
         passed_modules, passed_subjects = set(), set()
@@ -313,7 +313,7 @@ class CourseBrowser(Authenticator):
         self.debug("Requesting curriculum entries")
         response = self._session.get(
             "https://care-fs.iubh.de/ajax/4713/CourseInscriptionCurricular/DefaultController/fetchCurriculumEntry",
-            params={"bookindId": self.get('booking_id')}
+            params={"bookindId": self[self.username].get('booking_id')}
         )
         assert response.status_code == 200, "server responded with %d (%s)" % (response.status_code, response.text)
         curriculum_entries = {
@@ -393,7 +393,7 @@ class CourseBrowser(Authenticator):
         self.debug("Retrieving lecture series")
         response = self._session.get(
             "https://care-fs.iubh.de/ajax/4713/CourseInscriptionCurricular/DefaultController/fetchCourses",
-            params={"bookindId": self.get('booking_id')}
+            params={"bookindId": self[self.username].get('booking_id')}
         )
         assert response.status_code == 200, "server responded with %d (%s)" % (response.status_code, response.text)
         for course in response.json().values():
@@ -409,7 +409,7 @@ class CourseBrowser(Authenticator):
                                 # https://care-fs.iubh.de/ajax/4713/CourseInscriptionCurricular/DefaultController/CancelBooking
                                 "assignedSubjectIds": ','.join(map(str,[child['subjectId'] for child in subject["children"].values()])), 
                                 "curriculumEntryId": str(curriculumEntryId),
-                                "bookingId": str(self.get('booking_id'))
+                                "bookingId": str(self[self.username].get('booking_id'))
                             }
                     elif course.get('subjectId'):
                         for child in subject["children"].values():
@@ -419,7 +419,7 @@ class CourseBrowser(Authenticator):
                                     "lectureSeriesId": str(course["lectureSeries"][0]["id"]),
                                     "assignedSubjectIds": "", 
                                     "curriculumEntryId": str(curriculumEntryId),
-                                    "bookingId": str(self.get('booking_id'))
+                                    "bookingId": str(self[self.username].get('booking_id'))
                                 }
         self.debug("Successfully updated curriculum entries")
         return curriculum_entries
@@ -465,7 +465,7 @@ class CourseBrowser(Authenticator):
         # get enrolled courses
         response = self._session.get(
             "https://care-fs.iubh.de/ajax/4713/CourseInscriptionCurricular/DefaultController/fetchCourseTickets",
-            params={"bookindId": self.get('booking_id')}
+            params={"bookindId": self[self.username].get('booking_id')}
         )
         assert response.status_code == 200, "server responded with %d (%s)" % (response.status_code, response.text)
         # mark curriculum entries with enrollment
@@ -501,7 +501,7 @@ class CourseBrowser(Authenticator):
         self.debug("Retrieving available credits")
         response = self._session.get(
             "https://care-fs.iubh.de/ajax/4713/CourseInscriptionCurricular/DefaultController/fetchCreditCounts",
-            params={"bookindId": self.get('booking_id')}
+            params={"bookindId": self[self.username].get('booking_id')}
         )
         assert response.status_code == 200, "server responded with %d (%s)" % (response.status_code, response.text)
         self.debug("Successfully retrieved available credits")
@@ -644,6 +644,6 @@ if __name__ == '__main__':
     ) as handler:
         handler.sign_in()
         #print(*handler.list_courses(), sep='\n')
-        print(*handler.list_course_resources(1902), sep='\n')
-        #import json
-        #print(json.dumps(handler.get_courses_to_register(cached=False), indent=4))
+        #print(*handler.list_course_resources(1902), sep='\n')
+        import json
+        print(json.dumps(handler.get_courses_to_register(cached=False), indent=4))
