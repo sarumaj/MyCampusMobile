@@ -165,7 +165,7 @@ class Cache(ExpiringDict, Logger):
             for result in results:
                 key, value = result
                 # will trigger the SQL trigger automatically
-                self[key] = pickle.loads(bytes.fromhex(value), protocol=pickle.HIGHEST_PROTOCOL)
+                self[key] = pickle.loads(bytes.fromhex(value))
 
     def __getitem__(self, __k:str, __d:Any=None) -> Any:
         """
