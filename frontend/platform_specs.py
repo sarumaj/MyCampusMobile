@@ -7,11 +7,33 @@ from plyer import (
     email
 )
 
+# application directory
 app_dir_path = str(storagepath.get_application_dir())
 
+# download directory
 download_dir_path = str(storagepath.get_downloads_dir())
 
-def notify(title:str, message:str, ticker:str, toast:bool=False, **kwargs):
+def notify(title:str, message:str, ticker:str, toast:bool=False, **kwargs:dict[str,str]):
+    """
+    Function to be used on Android to dispatch a notification into notification banner.
+
+    Keyword arguments:
+        title: str,
+            title of the notification.
+
+        message: str,
+            content of the notification.
+        
+        ticker: str,
+            content of a ticker notification.
+
+        toast: bool, optional, default is False,
+            dispatch notification as toast.
+
+        **kwargs: dict[str,str]
+            optional arguments including 'app_icon' and 'app_name'.
+    """
+
     nwargs = {'title': title, 'message': message, 'ticker': ticker, 'toast': toast}
     if kwargs.get('app_icon') != None:
         nwargs['app_icon'] = kwargs['app_icon']
@@ -20,6 +42,13 @@ def notify(title:str, message:str, ticker:str, toast:bool=False, **kwargs):
     notification.notify(**nwargs)
 
 def send_email(recipient:str):
+    """
+    Creates e-mail object in the default e-mail client.
+
+    Positional arguments:
+        recipient: str,
+            e-mail address of the recipient.
+    """
     email.send(
         recipient=recipient, 
         subject="", 
@@ -28,6 +57,16 @@ def send_email(recipient:str):
     )
 
 def open(filename:str, datatype:str="application/pdf"):
+    """
+    Dispatches default action associated with given datatype.
+
+    Positional arguments:
+        filename: str,
+            name of the file to perfomrm default action with.
+
+        datatype: str,
+            MIME description of the file content.
+    """
     try:
         from jnius import autoclass, cast
         PythonActivity = autoclass('org.renpy.android.PythonActivity')  #request the Kivy activity instance
