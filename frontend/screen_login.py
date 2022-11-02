@@ -12,7 +12,6 @@ from kivymd.uix.button.button import MDRectangleFlatIconButton
 from kivy.uix.behaviors.focus import FocusBehavior
 from typing import Any
 
-
 ####################################
 #                                  #
 # preamble to provide package name #
@@ -24,7 +23,7 @@ from pathlib import Path
 
 if __name__ == '__main__' and __package__ is None:
     file = Path(__file__).resolve()
-    parent, top = file.parent, file.parents[1]
+    parent, top = file.parent, file.parents[2]
     sys.path.append(str(top))
     try:
         sys.path.remove(str(parent))
@@ -103,7 +102,7 @@ class LoginWindow(MDScreen):
         super().__init__(**kwargs)
 
     @property
-    def client(self) -> app.client:
+    def client(self):
         """
         Access point to the client interface.
 
@@ -190,13 +189,13 @@ class LoginWindow(MDScreen):
 
                 # perform sign-in actions
                 popup.status_msg = "Establishing connection..."
-                SAMLrequest = self.manager.client.get_saml_request()
+                SAMLrequest = self.client.get_saml_request()
 
                 popup.status_msg = "Exchanging handshake.."
-                SAMLresponse = self.manager.client.get_saml_response(SAMLrequest)
+                SAMLresponse = self.client.get_saml_response(SAMLrequest)
 
                 popup.status_msg = "Signing in..."
-                self.manager.client.submit_saml_response(SAMLresponse)
+                self.client.submit_saml_response(SAMLresponse)
 
                 # finished
                 popup.prog_val = 100

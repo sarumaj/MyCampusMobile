@@ -4,7 +4,7 @@ from bs4 import BeautifulSoup
 import re
 from pathlib import Path
 from typing import (Type, Union, Any, TypedDict)
-
+import networkx as nx
 
 ####################################
 #                                  #
@@ -60,7 +60,7 @@ class CourseBrowser(Authenticator):
                 }, ...
             ]
         """
-        if cached and self[self.username].get("courses") != None:
+        if cached and self.get(self.username, {}).get("courses") != None:
             return self[self.username]["courses"]
 
         self.debug("Requesting course list")
@@ -105,7 +105,7 @@ class CourseBrowser(Authenticator):
             ]
 
         """
-        if cached and self[self.username].get('resources', {}).get(course_id):
+        if cached and self.get(self.username, {}).get('resources', {}).get(course_id):
             return self[self.username]['resources'][course_id]
 
         self.debug(f"Requesting course view for {course_id}")
@@ -120,7 +120,7 @@ class CourseBrowser(Authenticator):
 
         soup = BeautifulSoup(response.text, 'html.parser')
         self[self.username]['resources'] = {
-            **self[self.username].get('resources', dict()),
+            **self.get(self.username, {}).get('resources', dict()),
             **{
                     course_id: [
                     {
@@ -245,7 +245,7 @@ class CourseBrowser(Authenticator):
             regex = re.compile('\{"id":"(\d+)","classId":"\d+","studyProgramId":"\d+","focusIds":\[.*\]\}')
             self[self.username]['booking_id'] = regex.search(response.text).group(1)
         except: 
-            if self[self.username].get('booking_id'):
+            if self.get(self.username, {}).get('booking_id'):
                 self.warning("failed to retrieve booking id online")
             else:
                 raise
@@ -268,7 +268,7 @@ class CourseBrowser(Authenticator):
         self.debug("Requesting graded curriculum entries")
         response = self._session.get(
             "https://care-fs.iubh.de/ajax/4713/CourseInscriptionCurricular/DefaultController/fetchCurriculumGrades",
-            params={"bookindId": self[self.username].get('booking_id')}
+            params={"bookindId": self.get(self.username, {}).get('booking_id')}
         )
         assert response.status_code == 200, "server responded with %d (%s)" % (response.status_code, response.text)
         passed_modules, passed_subjects = set(), set()
@@ -313,7 +313,7 @@ class CourseBrowser(Authenticator):
         self.debug("Requesting curriculum entries")
         response = self._session.get(
             "https://care-fs.iubh.de/ajax/4713/CourseInscriptionCurricular/DefaultController/fetchCurriculumEntry",
-            params={"bookindId": self[self.username].get('booking_id')}
+            params={"bookindId": self.get(self.username, {}).get('booking_id')}
         )
         assert response.status_code == 200, "server responded with %d (%s)" % (response.status_code, response.text)
         curriculum_entries = {
@@ -340,6 +340,87 @@ class CourseBrowser(Authenticator):
         }
         self.debug("Successfully retrieved curriculum entries")
         return curriculum_entries
+
+    @ExceptionHandler("failed to draw dependency graph", RequestFailed)
+    def get_dependency_graph(self, *, cached:bool=False, include_root:bool=False) -> nx.Graph:
+        """
+        Method examines dependencies between curriculum entries and generates a graph in PNG format.
+
+        Keyword arguments:
+            cached: bool, default is False,
+                if True, response will be retrieved from cache.
+
+            include_root: bool default is False,
+                if True, independent curriculum entries will be drawn around a root node.
+
+        Returns:
+            networkx.Graph,
+                Graph instance.
+        """
+        self.debug("requested dependecy graph")
+        if cached and self.get(self.username, {}).get("dependency_graph"):
+            return self[self.username]["dependency_graph"]
+
+        # make sure to have valid booking id
+        if not self.get(self.username, {}).get('booking_id'):
+            self.get_booking_id()
+
+        response = self._session.get(
+            "https://care-fs.iubh.de/ajax/4713/CourseInscriptionCurricular/DefaultController/fetchCurriculumEntry",
+            params={"bookindId": self.get(self.username, {}).get('booking_id')}
+        )
+        assert response.status_code == 200, "server responded with %d (%s)" % (response.status_code, response.text)
+        data = response.json()
+
+        self.debug("creating networkx.Graph instance")
+        # create graph
+        G = nx.DiGraph()
+        # add nodes
+        for node in [
+            {
+                "node": re.sub("\s?\(", "\n(", course["label"]),
+                "weight": len(
+                    course["presupposedModuleIds"] + (
+                        [''] if include_root else []
+                    )
+                )
+            }
+            for sem in data["curriculumEntries"] 
+            for course in sem["children"] + (
+                [{"node": "", "weight":1}] if include_root else []
+            )
+            if course["presupposedModuleIds"] or include_root
+        ]:
+            G.add_node(node["node"], weight=node["weight"])
+        # add edges
+        for edge in [
+            {
+                "edge": (
+                    re.sub("\s?\(", "\n(", course["label"]), 
+                    next((
+                        re.sub("\s?\(", "\n(", course2["label"])
+                        for sem2 in data["curriculumEntries"] 
+                        for course2 in sem2["children"]
+                        if course2["moduleId"] == module
+                    ), ''),
+                ), 
+                "weight": len(course["presupposedModuleIds"] + (
+                        [''] if include_root else []
+                    )
+                )
+            }
+            for sem in data["curriculumEntries"] 
+            for course in sem["children"]
+            for module in course["presupposedModuleIds"] + (
+                [''] if include_root else []
+            )
+            if course["presupposedModuleIds"] or include_root
+        ]:
+            G.add_edge(*edge["edge"], weight=edge["weight"])
+        
+        self.debug("created: " + str(G))
+        self[self.username]["dependency_graph"] = G
+        return self[self.username]["dependency_graph"]
 
     @ExceptionHandler("failed to create booking context", RequestFailed)
     def create_booking_context(self, curriculum_entries:dict) -> dict: 
@@ -393,7 +474,7 @@ class CourseBrowser(Authenticator):
         self.debug("Retrieving lecture series")
         response = self._session.get(
             "https://care-fs.iubh.de/ajax/4713/CourseInscriptionCurricular/DefaultController/fetchCourses",
-            params={"bookindId": self[self.username].get('booking_id')}
+            params={"bookindId": self.get(self.username, {}).get('booking_id')}
         )
         assert response.status_code == 200, "server responded with %d (%s)" % (response.status_code, response.text)
         for course in response.json().values():
@@ -409,7 +490,7 @@ class CourseBrowser(Authenticator):
                                 # https://care-fs.iubh.de/ajax/4713/CourseInscriptionCurricular/DefaultController/CancelBooking
                                 "assignedSubjectIds": ','.join(map(str,[child['subjectId'] for child in subject["children"].values()])), 
                                 "curriculumEntryId": str(curriculumEntryId),
-                                "bookingId": str(self[self.username].get('booking_id'))
+                                "bookingId": str(self.get(self.username, {}).get('booking_id'))
                             }
                     elif course.get('subjectId'):
                         for child in subject["children"].values():
@@ -419,7 +500,7 @@ class CourseBrowser(Authenticator):
                                     "lectureSeriesId": str(course["lectureSeries"][0]["id"]),
                                     "assignedSubjectIds": "", 
                                     "curriculumEntryId": str(curriculumEntryId),
-                                    "bookingId": str(self[self.username].get('booking_id'))
+                                    "bookingId": str(self.get(self.username, {}).get('booking_id'))
                                 }
         self.debug("Successfully updated curriculum entries")
         return curriculum_entries
@@ -465,7 +546,7 @@ class CourseBrowser(Authenticator):
         # get enrolled courses
         response = self._session.get(
             "https://care-fs.iubh.de/ajax/4713/CourseInscriptionCurricular/DefaultController/fetchCourseTickets",
-            params={"bookindId": self[self.username].get('booking_id')}
+            params={"bookindId": self.get(self.username, {}).get('booking_id')}
         )
         assert response.status_code == 200, "server responded with %d (%s)" % (response.status_code, response.text)
         # mark curriculum entries with enrollment
@@ -501,7 +582,7 @@ class CourseBrowser(Authenticator):
         self.debug("Retrieving available credits")
         response = self._session.get(
             "https://care-fs.iubh.de/ajax/4713/CourseInscriptionCurricular/DefaultController/fetchCreditCounts",
-            params={"bookindId": self[self.username].get('booking_id')}
+            params={"bookindId": self.get(self.username, {}).get('booking_id')}
         )
         assert response.status_code == 200, "server responded with %d (%s)" % (response.status_code, response.text)
         self.debug("Successfully retrieved available credits")
@@ -575,7 +656,7 @@ class CourseBrowser(Authenticator):
             }
         )           
         """
-        if cached and self[self.username].get('curriculum'):
+        if cached and self.get(self.username, {}).get('curriculum'):
             return self[self.username]['curriculum']
 
         self.get_booking_id()
@@ -645,5 +726,6 @@ if __name__ == '__main__':
         handler.sign_in()
         #print(*handler.list_courses(), sep='\n')
         #print(*handler.list_course_resources(1902), sep='\n')
-        import json
-        print(json.dumps(handler.get_courses_to_register(cached=False), indent=4))
+        #import json
+        #print(json.dumps(handler.get_courses_to_register(cached=False), indent=4))
+        print(handler.get_dependency_graph(cached=False))

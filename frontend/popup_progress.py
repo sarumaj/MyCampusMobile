@@ -47,53 +47,166 @@ class ProgressPopup(MDDialog):
         super().__init__(**kwargs)    
 
     @property
-    def prog_val(self):
+    def prog_val(self) -> int:
         """
-        Getter for th content_class
+        Access point to the current value of the progress bar.
+
+        Returns:
+            int
         """
+
         return self.content_cls.prog_val
 
     @prog_val.setter
-    def prog_val(self, __v):
+    def prog_val(self, __v:int):
+        """
+        Access point (setter) for the current value of the progress bar.
+
+        Positional arguments:
+            int
+        """
+
         self.content_cls.prog_val = __v
 
     @property
-    def status_msg(self):
+    def total(self) -> int:
+        """
+        Access point to the maximum value of the progress bar.
+
+        Returns:
+            int
+        """
+
+        return self.content_cls.total
+
+    @property
+    def status_msg(self) -> str:
+        """
+        Access point to the status message.
+
+        Returns:
+            str
+        """
+
         return self.content_cls.status_msg
 
     @status_msg.setter
-    def status_msg(self, __v):
+    def status_msg(self, __v:str):
+        """
+        Access point (setter) for the status message.
+
+        Positional arguments:
+            str
+        """
+
         self.content_cls.status_msg = __v
 
     @property
-    def exception(self):
+    def exception(self) -> Exception:
+        """
+        Access point to the internal exception object.
+
+        Returns:
+            Exception
+        """
+
         return self.content_cls.exception
 
     @exception.setter
-    def exception(self, __v):
+    def exception(self, __v:Exception):
+        """
+        Access point (setter) for the internal exception object.
+
+        Positional arguments:
+            Exception
+        """
+
         self.content_cls.exception = __v
 
     @property
-    def has_started(self):
+    def has_started(self) -> bool:
+        """
+        Access point to the "has_started" of the content class.
+
+        Returns:
+            bool
+        """
+
         return self.content_cls.has_started
 
     @has_started.setter
-    def has_started(self, __v):
+    def has_started(self, __v:bool):
+        """
+        Access point (setter) for the "has_started" of the content class.
+
+        Positional arguments:
+            bool
+        """
+
         self.content_cls.has_started = __v
 
-    def run_worker(self, func:Callable, *args, **kwargs):
-        self.content_cls.has_started = True
-        Thread(target=func, args=args, kwargs=(kwargs if kwargs else None)).start()
+    def run_worker(self, func:Callable, *args:tuple[Any], **kwargs:dict[str,Any]):
+        """
+        Dispatches a callable as a non-daemonic thread.
+
+        Positional arguments:
+            func: Callable,
+                function to be executed in the thread.
+
+            *args: tuple[Any],
+                positional arguments passed to the callable function.
+
+            **kwargs: dcit[str,Any],
+                keyword arguments passed to the callable function.
+        """
+
+        self.has_started = True
+        Thread(
+            target=func, 
+            args=args, 
+            kwargs=(kwargs if kwargs else None)
+        ).start()
 
     def on_dismiss(self):
-        self.content_cls.has_started = False
+        """
+        Called when the dialog is supposed to disappear.
+        """
+
+        self.has_started = False
 
     def schedule_auto_update(self, step:int, interval:float):
-        def updater(self, step, interval):
+        """
+        Method used to mock the update behavior of the progress bar.
+        It updates the progress bar value by a random value between 1 and x
+        every y seconds.
+
+        Positional arguments:
+            step: int,
+                upper range boundary for the update value.
+
+            interval: int,
+                the update interval which will be multiplied with the random value between 1 and 5.
+        """
+
+        def updater(self, step:int, interval:float):
+            """
+            Inner function to be called in a dedicated thread.
+
+            Positional arguments:
+                same as for the outer method.
+            """
+
             while True:
-                new_val = self.content_cls.prog_val + random.randint(1, step)
-                if new_val >= 100:
+                new_val = self.prog_val + random.randint(1, step)
+                if new_val >= self.total:
+                    # progress is completed
                     break
-                self.content_cls.prog_val = new_val
+                self.prog_val = new_val
+                # wait before next update
                 time.sleep(interval*random.randint(1, 5))
-        Thread(target=updater, args=(self, step, interval)).start()
+
+        # dispatch updater
+        Thread(
+            target=updater, 
+            args=(self, step, interval)
+        ).start()

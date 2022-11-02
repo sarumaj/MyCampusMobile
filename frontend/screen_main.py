@@ -23,7 +23,7 @@ from pathlib import Path
 
 if __name__ == '__main__' and __package__ is None:
     file = Path(__file__).resolve()
-    parent, top = file.parent, file.parents[1]
+    parent, top = file.parent, file.parents[2]
     sys.path.append(str(top))
     try:
         sys.path.remove(str(parent))
@@ -36,6 +36,7 @@ from .screen_courses import CourseBrowser
 from .screen_grades import GradeChecker
 from .screen_calendar import CalendarView
 from .platform_specs import send_email
+from ..backend import Client
 
 ###############
 #             #
@@ -112,25 +113,25 @@ class MainScreenWithTopPanel(MDScreen):
         )
         self.courses_btn._text_color = self.courses_btn.text_color
         self.courses_btn.selected = True
-        self.courses_btn.bind(on_release=self.go_courses)
+        self.courses_btn.bind(on_release=lambda btn_inst: self.switch_screen("courses"))
         self.ids.md_drawer_menu.add_widget(self.courses_btn)
 
         self.grades_btn = NavigationItem(
             icon="format-list-numbered",
             text="Exam results",
         )
-        self.grades_btn.bind(on_release=self.go_grades)
+        self.grades_btn.bind(on_release=lambda btn_inst: self.switch_screen("grades"))
         self.ids.md_drawer_menu.add_widget(self.grades_btn)
 
         self.calendar_btn = NavigationItem(
             icon="calendar-month",
             text="Upcoming events",
         )
-        self.calendar_btn.bind(on_release=self.go_calendar)
+        self.calendar_btn.bind(on_release=lambda btn_inst: self.switch_screen("calendar"))
         self.ids.md_drawer_menu.add_widget(self.calendar_btn)
 
     @property
-    def client(self) -> app.client:
+    def client(self) -> Client:
         """
         Access point to the client interface.
 
@@ -149,7 +150,7 @@ class MainScreenWithTopPanel(MDScreen):
         """
 
         # switch to the courses screen
-        self.go_courses(None)
+        self.switch_screen("courses")
         return super().on_enter(*args)
 
     def on_leave(self, *args:tuple[Any]):
@@ -252,81 +253,37 @@ class MainScreenWithTopPanel(MDScreen):
 
         # dispatch watch-dog
         perfom_switch(1)
-        
 
-    def go_courses(self, bound_instance):
-        """
-        Performs switch to the "courses" subscreen.
-
-        Positional arguments:
-            bound_instance: kivy.uix.button.Button,
-                button instance bound to this method.
-        """
-
-        self.client.Debug("switching to the courses screen")
-        try:
-            self.ids.sm.get_screen("courses")
-        except:
-            self.client.warning("failed to retrieve courses screen, reinitializing")
-            if not self.subscreens.get("courses"):
-                self.subscreens["courses"] = CourseBrowser(name="courses", main_screen=self)
-            self.ids.sm.add_widget(self.subscreens["courses"])
-        finally:
-            # close navigation drawer
-            self.ids.nav_drawer.set_state(new_state='close')
-            # switch over
-            self.ids.sm.transition.direction = "down"
-            self.ids.sm.switch_to(self.ids.sm.get_screen("courses"))
-
-    def go_grades(self, bound_instance):
+    def switch_screen(self, name:str):
         """
         Performs switch to the "grades" subscreen.
 
         Positional arguments:
-            bound_instance: kivy.uix.button.Button,
-                button instance bound to this method.
+            name: str,
+                screen name.
         """
         
-        self.client.Debug("switching to the grades screen")
+        views = {
+            "courses": {"no":0, "class":CourseBrowser}, 
+            "grades": {"no":1, "class":GradeChecker},
+            "calendar": {"no":2, "class":CalendarView}
+        }
+        self.client.debug(f"switching to the {name} screen")
         try:
-            self.ids.sm.get_screen("grades")
+            self.ids.sm.get_screen(name)
         except:
-            self.client.warning("failed to retrieve grades screen, reinitializing")
-            if not self.subscreens.get("grades"):
-                self.subscreens["grades"] = GradeChecker(name="grades", main_screen=self)
-            self.ids.sm.add_widget(self.subscreens["grades"])
+            self.client.warning(f"failed to retrieve {name} screen, reinitializing")
+            if not self.subscreens.get(name):
+                self.subscreens[name] = views[name]["class"](name=name, main_screen=self)
+            self.ids.sm.add_widget(self.subscreens[name])
         finally:
             # close navigation drawer
             self.ids.nav_drawer.set_state(new_state='close')
             # choose transition direction
-            if self.ids.sm.current == "calendar":
+            if views[name]["no"] <= views.get(self.ids.sm.current, {}).get("no", 0):
                 self.ids.sm.transition.direction = "down"
             else:
                 self.ids.sm.transition.direction = "up"
             # switch over
-            self.ids.sm.switch_to(self.ids.sm.get_screen("grades"))
-
-    def go_calendar(self, bound_instance):
-        """
-        Performs switch to the "calendar" subscreen.
-
-        Positional arguments:
-            bound_instance: kivy.uix.button.Button,
-                button instance bound to this method.
-        """
-
-        self.client.Debug("switching to the grades screen")
-        try:
-            self.ids.sm.get_screen("calendar")
-        except:
-            self.client.warning("failed to retrieve calendar screen, reinitializing")
-            if not self.subscreens.get("calendar"):
-                self.subscreens["calendar"] = CalendarView(name="calendar", main_screen=self)
-            self.ids.sm.add_widget(self.subscreens["calendar"])
-        finally:
-            # close navigation drawer
-            self.ids.nav_drawer.set_state(new_state='close')
-            # switch over
-            self.ids.sm.transition.direction = "up"
-            self.ids.sm.switch_to(self.ids.sm.get_screen("calendar"))
-        
+            self.ids.sm.switch_to(self.ids.sm.get_screen(name))
+    

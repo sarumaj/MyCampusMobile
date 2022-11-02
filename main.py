@@ -1,5 +1,8 @@
 # -*- coding: utf-8 -*-
 
+import os 
+os.environ['KIVY_IMAGE'] = 'pil,sdl2'
+
 from kivy.app import runTouchApp
 from kivy.core.window import Window
 

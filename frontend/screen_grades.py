@@ -1,22 +1,15 @@
 # -*- coding: utf-8 -*-
 
-from kivy.properties import (ObjectProperty, StringProperty, NumericProperty, BooleanProperty, ListProperty)
-from kivy.metrics import (sp, dp)
+from kivy.properties import (ObjectProperty, ListProperty)
+from kivy.metrics import dp
 from kivy.core.window import Window
 from kivy.clock import Clock
 from dateutil.parser import parse
-from kivy.uix.label import Label
 from kivymd.uix.screen import MDScreen
 from kivymd.uix.datatables import MDDataTable
-from datetime import date
 import asynckivy
-import re
+from typing import Any
 
-class RowHead(Label):
-    pass
-
-class RowRecord(Label):
-    pass
 
 class ExamResults(MDDataTable):
     pass

@@ -64,6 +64,22 @@
 
 <CoursesBottomNavigation>:
 
+<CourseRegisrationRecordContent>:
+    orientation: "vertical"
+    size_hint_y: None
+    height: min(Window.height *.6, sum(ch.height for ch in container.children) + top_bar.height + dp(20))
+    padding: (dp(10), dp(10), dp(10), dp(10))
+
+    MDTopAppBar:
+        id: top_bar
+        title: 'Select course to start with:'
+
+    MDScrollView:
+        MDGridLayout:
+            id: container
+            cols: 1
+            adaptive_height: True
+
 <CourseBrowser>:
     name: "courses"
     padding: (dp(10), dp(10), dp(10), dp(10))
@@ -72,7 +88,7 @@
         id: banner
         text: []
         over_widget: root
-        vertical_pad: root.master.ids.top_bar.height - self.height
+        vertical_pad: root.main_screen.ids.top_bar.height - self.height
         type: "two-line"
         right_action: ["CLOSE", lambda bound_instance: self.hide()]
             

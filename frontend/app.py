@@ -20,7 +20,7 @@ from pathlib import Path
 
 if __name__ == '__main__' and __package__ is None:
     file = Path(__file__).resolve()
-    parent, top = file.parent, file.parents[1]
+    parent, top = file.parent, file.parents[2]
     sys.path.append(str(top))
     try:
         sys.path.remove(str(parent))

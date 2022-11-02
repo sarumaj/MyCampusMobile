@@ -1,0 +1,62 @@
+#:kivy 2.1.0
+
+<GraphContent>:
+    orientation: "vertical"
+    padding: "20dp"
+    size_hint: (1, None)
+    height: Window.height * .8
+    spacing: dp(10)
+    
+    MDScrollView:
+        size_hint: (1, 1)
+        do_scroll_x: True
+        do_scroll_y: True
+        do_scale: True
+
+        BoxLayout:
+            orientation: 'vertical'
+            size_hint: (None,None)
+            size: (image.size[0] * scatter.scale, image.size[1] * scatter.scale)
+
+            Scatter:
+                id: scatter
+                scale_min: .01
+                scale_max: 3.
+                do_rotation: False
+                do_translation_x: False
+                do_translation_y: False
+
+                Image:
+                    id: image
+                    texture: root.core_image.texture
+                    allow_stretch: True
+                    keep_ratio: True
+                    size_hint: (None, None)
+                    width: root.width - dp(30)
+                    height: self.width / self.texture_size[0] * self.texture_size[1]
+
+    MDFloatLayout:
+        size_hint: (1, None)
+        height: 0
+
+        MDIconButton:
+            icon: "download-outline"
+            theme_text_color: "Custom"
+            text_color: app.theme_cls.primary_color
+            pos_hint: {'right': 1, 'top': 0}
+            on_release:
+                root.dialog.download()
+
+    MDRectangleFlatButton:
+        text: "Close"
+        theme_text_color: "Custom"
+        text_color: app.theme_cls.primary_color
+        pos_hint: {"center_x": .5}
+        on_release:
+            root.dialog.dismiss()
+
+<GraphDialog>:
+    size_hint: (.8, None)
+    auto_dismiss: False
+    type: "custom"
+    radius: (20, 7, 20, 7)

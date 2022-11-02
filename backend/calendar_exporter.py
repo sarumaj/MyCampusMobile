@@ -97,8 +97,8 @@ class CalendarExporter(Authenticator):
         """
 
         fname = f'ical_events({exportevents.name})_period({timeperiod.name}).ics'
-        if cached and self[self.username].get(fname) != None:
-            return fname, self[self.username][fname]
+        if cached and self.get(self.username, {}).get(fname) != None:
+            return fname, self.get(self.username, {})[fname]
 
         # send HTTP request to PHP endpoint
         self.debug("Requesting calendar export context")
@@ -115,7 +115,7 @@ class CalendarExporter(Authenticator):
             }
         }
         # store calendar options for lookup
-        self[self.username]['calendar_options'] = {
+        self.get(self.username, {})['calendar_options'] = {
             'exportevents': [
                 el.get('value') for el in soup.select('input[name="events[exportevents]"]')
             ],
@@ -128,10 +128,10 @@ class CalendarExporter(Authenticator):
                 **fields,
                 **{
                     'events[exportevents]': {
-                        el:el for el in self[self.username]['calendar_options']['exportevents']
+                        el:el for el in self.get(self.username, {})['calendar_options']['exportevents']
                     }.get(exportevents.name, 'all'),
                     'period[timeperiod]': {
-                        el:el for el in self[self.username]['calendar_options']['timeperiod']
+                        el:el for el in self.get(self.username, {})['calendar_options']['timeperiod']
                     }.get(timeperiod.name, 'recentupcoming')
                 }
             }
@@ -145,9 +145,9 @@ class CalendarExporter(Authenticator):
         )
         assert response.status_code == 200, "server responded with %d (%s)" % (response.status_code, response.text)
 
-        self[self.username][fname] = {'ical': response.text}
-        cal = Calendar.from_ical(self[self.username][fname]['ical'])
-        self[self.username][fname]['parsed'] = [
+        self.get(self.username, {})[fname] = {'ical': response.text}
+        cal = Calendar.from_ical(self.get(self.username, {})[fname]['ical'])
+        self.get(self.username, {})[fname]['parsed'] = [
             {
                 key: event.decoded(key) if event.get(key) else None
                 for key in ('summary', 'description', 'dtstart', 'dtend', 'location')
@@ -155,7 +155,7 @@ class CalendarExporter(Authenticator):
         ]
         self.debug("Successfully exported calendar events")
 
-        return fname, self[self.username][fname] 
+        return fname, self.get(self.username, {})[fname] 
             
 if __name__ == '__main__':
     with CalendarExporter(

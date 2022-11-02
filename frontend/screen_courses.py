@@ -1,9 +1,12 @@
 # -*- coding: utf-8 -*-
 
-from tkinter import Button
-from kivy.properties import (ObjectProperty, NumericProperty, StringProperty, BooleanProperty, ListProperty, DictProperty)
+from kivy.uix.button import Button
+from kivy.properties import (
+    ObjectProperty, NumericProperty, StringProperty, 
+    BooleanProperty, ListProperty, DictProperty
+)
 from kivy.uix.image import AsyncImage
-from kivymd.uix.bottomnavigation import MDBottomNavigation
+from kivymd.uix.bottomnavigation import (MDBottomNavigation, MDBottomNavigationItem)
 from kivymd.uix.boxlayout import MDBoxLayout
 from kivymd.uix.expansionpanel import (MDExpansionPanel, MDExpansionPanelTwoLine)
 from kivymd.uix.card import MDCard
@@ -11,7 +14,6 @@ from kivymd.uix.fitimage import FitImage
 from kivymd.uix.screen import MDScreen
 from kivymd.uix.list import (
     OneLineIconListItem, 
-    IconLeftWidget,
     IconLeftWidgetWithoutTouch,
     ThreeLineIconListItem,
     IRightBodyTouch,
@@ -24,7 +26,9 @@ from io import BytesIO
 from pathlib import Path
 import asynckivy
 from typing import Any
-from kivymd.uix.dialog.dialog import MDDialog
+from kivymd.uix.dialog import MDDialog
+from kivymd.uix.banner import MDBanner
+from kivymd.uix.toolbar import MDTopAppBar
 
 ####################################
 #                                  #
@@ -37,7 +41,7 @@ from pathlib import Path
 
 if __name__ == '__main__' and __package__ is None:
     file = Path(__file__).resolve()
-    parent, top = file.parent, file.parents[1]
+    parent, top = file.parent, file.parents[2]
     sys.path.append(str(top))
     try:
         sys.path.remove(str(parent))
@@ -47,12 +51,19 @@ if __name__ == '__main__' and __package__ is None:
 
 from .popup_progress import ProgressPopup
 from .popup_save_dialog import SaveDialog
+from .popup_graph import GraphDialog
+from ..backend import Client
 
 ###############
 #             #
 # definitions #
 #             #
 ###############
+
+class CourseRegisrationRecordContent(MDBoxLayout):
+    """
+    Content for the bottom sheet object of the CourseRegisrationRecord.
+    """
 
 class CourseRegisrationRecord(ThreeLineAvatarIconListItem):
     """
@@ -67,8 +78,8 @@ class CourseRegisrationRecord(ThreeLineAvatarIconListItem):
     bottom_sheet_content = ObjectProperty(None)
     # reference to the checkbox triggering enrollment
     enroll_checkbox = ObjectProperty(None)
-    # reference to the "main" screen instance
-    main_screen = ObjectProperty(None)
+    # reference to the "courses" screen instance
+    screen = ObjectProperty(None)
 
 
     def __init__(
@@ -76,7 +87,8 @@ class CourseRegisrationRecord(ThreeLineAvatarIconListItem):
         booking:dict[str,str], 
         is_enrolled:bool, 
         bottom_sheet_content:MDCustomBottomSheet, 
-        main_screen:MDScreen, **kwargs:dict[str,Any]
+        screen:MDScreen, 
+        **kwargs:dict[str,Any]
     ):
         """
         Creates bookable course record.
@@ -92,14 +104,14 @@ class CourseRegisrationRecord(ThreeLineAvatarIconListItem):
                 list of available course subjects/lectures.
 
             screen: MDScreen,
-                reference to the "main" screen instance.
+                reference to the "courses" screen instance.
 
             **
         """
         self.booking_ctx = booking
         self.is_enrolled = is_enrolled
         self.bottom_sheet_content = bottom_sheet_content
-        self.main_screen = main_screen
+        self.screen = screen
 
         # create checkbox
         self.enroll_checkbox = CourseEnroll(parent_widget=self, active=self.is_enrolled)
@@ -112,7 +124,7 @@ class CourseRegisrationRecord(ThreeLineAvatarIconListItem):
         )
 
     @property
-    def client(self) -> main_screen.client:
+    def client(self) -> Client:
         """
         Access point to the client interface.
 
@@ -120,23 +132,19 @@ class CourseRegisrationRecord(ThreeLineAvatarIconListItem):
             backend.Client
         """
 
-        return self.main_screen.client
+        return self.screen.client
 
     def on_release(self):
         """
         Ought to be triggered on release of the class instance.
         """
 
-        if self.enroll_checkbox.active:
-            # open bottom sheet list if course enrolled
-            MDCustomBottomSheet(screen=self.bottom_sheet_content).open()
-        else:
-            # course is not enrolled yet, so dipatch a notification banner
-            self.main_screen.ids.banner.text = [
-                f'You did not enroll yet for the course "{self.text}"!',
-                "Toogle the checkbox on the right side to enroll, please."
-            ]
-            self.main_screen.ids.banner.show()
+        if not self.enroll_checkbox.active:
+            # course is not enrolled yet, so perform enrollment
+            self.enroll_checkbox.on_active(self, True)
+            self.enroll_checkbox.active = True
+        # open bottom sheet list
+        MDCustomBottomSheet(screen=self.bottom_sheet_content).open()
         return super().on_release()
 
 class CourseEnroll(IRightBodyTouch, MDCheckbox):
@@ -164,11 +172,12 @@ class CourseEnroll(IRightBodyTouch, MDCheckbox):
         """
 
         self.parent_widget = parent_widget
-        super().__init__(self, **kwargs)
+        MDCheckbox.__init__(self, **kwargs)
+        IRightBodyTouch.__init__(self)
 
     
     @property
-    def client(self) -> parent_widget.client:
+    def client(self) -> Client:
         """
         Access point to the client interface.
 
@@ -179,7 +188,7 @@ class CourseEnroll(IRightBodyTouch, MDCheckbox):
         return self.parent_widget.client
 
     @property
-    def is_enrolled(self) -> parent_widget.is_enrolled:
+    def is_enrolled(self) -> bool:
         """
         Access point to the "is_enrolled" property of the parent_widget.
 
@@ -189,7 +198,7 @@ class CourseEnroll(IRightBodyTouch, MDCheckbox):
 
         return self.parent_widget.is_enrolled
 
-    @is_enrolled
+    @is_enrolled.setter
     def is_enrolled(self, value:bool):
         """
         Access point (setter) for the "is_enrolled" property of the parent_widget.
@@ -197,7 +206,7 @@ class CourseEnroll(IRightBodyTouch, MDCheckbox):
         self.parent_widget.is_enrolled = value
 
     @property
-    def banner(self) -> parent_widget.main_screen.ids.banner:
+    def banner(self) -> MDBanner:
         """
         Access point to the "banner" of the "main" screen.
 
@@ -205,7 +214,7 @@ class CourseEnroll(IRightBodyTouch, MDCheckbox):
             kivymd.uix.banner.MDBanner
         """
 
-        return self.parent_widget.main_screen.ids.banner
+        return self.parent_widget.screen.ids.banner
 
     def on_active(self, bound_instance:MDCheckbox, check:bool):
         """
@@ -227,7 +236,7 @@ class CourseEnroll(IRightBodyTouch, MDCheckbox):
             if check and not self.is_enrolled: 
                 try:
                     # enroll
-                    self.client.enroll(**self.master.booking_ctx)
+                    self.client.enroll(**self.parent_widget.booking_ctx)
                     self.is_enrolled = True
                 except BaseException as ex:
                     # send warning as the banner of the main screen
@@ -237,10 +246,10 @@ class CourseEnroll(IRightBodyTouch, MDCheckbox):
                     ]
                     self.banner.show()
                     self.active = not check
-            elif not check and self.master.is_enrolled:
+            elif not check and self.is_enrolled:
                 try:
                     # cancel enrollment
-                    self.client.cancel(**self.master.booking_ctx)
+                    self.client.cancel(**self.parent_widget.booking_ctx)
                     self.is_enrolled = False
                 except BaseException as ex:
                     # send warning as the banner of the main screen
@@ -341,7 +350,7 @@ class CourseResources(MDBoxLayout):
             self.add_widget(download_btn)
 
     @property
-    def client(self) -> screen.client:
+    def client(self) -> Client:
         """
         Access point to the client interface.
 
@@ -352,7 +361,7 @@ class CourseResources(MDBoxLayout):
         return self.screen.client
 
     @property
-    def use_cache(self) -> screen.main_screen.use_cache:
+    def use_cache(self) -> bool:
         """
         Access point to the "use_cache" property of the main screen.
 
@@ -363,7 +372,7 @@ class CourseResources(MDBoxLayout):
         return self.screen.main_screen.use_cache
 
     @property
-    def banner(self) -> screen.main_screen.ids.banner:
+    def banner(self) -> MDBanner:
         """
         Access point to the banner instance of the main screen.
 
@@ -371,7 +380,7 @@ class CourseResources(MDBoxLayout):
             kivymd.uix.banner.MDBanner
         """
 
-        return self.screen.main_screen.ids.banner
+        return self.screen.ids.banner
             
     def download(self, bound_instance:Button, link:str):
         """
@@ -396,7 +405,7 @@ class CourseResources(MDBoxLayout):
             Worker downloading the content and updating the progress dialog.
 
             Positional arguments:
-                popup: kivymd.uix.dialog.dialog.MDDialog,
+                popup: kivymd.uix.dialog.MDDialog,
                     instance of a progress dialog.
             """
             try:
@@ -463,44 +472,139 @@ class CourseResources(MDBoxLayout):
         perfom_switch(1)
 
 class CoursesExpansionPanel(MDExpansionPanel):
-    pass
+    """
+    Custom expansion panel used to list courses and available course resources 
+    as drop down panel list.
+    """
 
 class CourseCard(MDCard):
-    pass
-
+    """
+    Container for the custom expansion panel.
+    """
+ 
 class CoursesBottomNavigation(MDBottomNavigation):
-    def on_switch_tabs(self, bottom_navigation_item, name_tab: str):
+    """
+    Tab manager for the course overview used to cluster the courses into categories.
+    """
+
+    def on_switch_tabs(self, bottom_navigation_item:MDBottomNavigationItem, name_tab:str):
+        """
+        Called when switching between tabs.
+
+        Positional arguments:
+            bottom_navigation_item: kivymd.uix.bottomnavigation.MDBottomNavigationItem,
+                instance of navigation item.
+
+            name_tab: str,
+                name of the tab to switch over.
+        """
         tabs = {"active": 0, "inactive": 1, "bookable": 2}
+        # determine direction of the transition
         if tabs.get(self.current, 0) > tabs.get(name_tab, 0):
             self.ids.tab_manager.transition.direction = "right"
         else:
             self.ids.tab_manager.transition.direction = "left"
+        # perform switch
         self.current = name_tab
         return super().on_switch_tabs(bottom_navigation_item, name_tab)
 
-class CourseBrowser(MDScreen):      
-    master = ObjectProperty(None)
-    resources = ListProperty([])
-    bookable = DictProperty({})
+class CourseBrowser(MDScreen):
+    """
+    Screen view listing all available courses.
+    """
 
-    def __init__(self, **kwargs):
-        self.master = kwargs.pop('master')
+    # reference to the "main" screen
+    main_screen = ObjectProperty(None)
+    # list of courses (for internal usage only)
+    resources = ListProperty([])
+    # list of bookable courses (for internal usage only)
+    bookable = DictProperty({})
+    # dependency graph
+    dependencies = ObjectProperty(None)
+
+    def __init__(self, *, main_screen:MDScreen, **kwargs:dict[str,Any]):
+        """
+        Initialize the screen view.
+
+        Keyword arguments:
+            main_screen: kivymd.uix.screen.MDScreen,
+                reference to the "main" screen instance.
+
+            **kwargs: dict[str,Any],
+                keyword arguments passed to the MDScreen class.
+        """
+
+        self.main_screen = main_screen
         super().__init__(**kwargs)
+        # retrieve courses
         self.get_courses()
 
-    def set_items(self):
-        async def set_items():                 
+    @property
+    def client(self) -> Client:
+        """
+        Access point to the client interface.
+
+        Returns:
+            backend.Client
+        """
+
+        return self.main_screen.client
+
+    @property
+    def top_bar(self) -> MDTopAppBar:
+        """
+        Access point to the client interface.
+
+        Returns:
+             kivymd.uix.toolbar.MDTopAppBar
+        """
+
+        return self.main_screen.ids.top_bar
+
+    @property
+    def use_cache(self) -> bool:
+        """
+        Access point to the "use_cache" property of the "main" screen.
+
+        Returns:
+            bool
+        """
+
+        return self.main_screen.use_cache
+
+    @use_cache.setter
+    def use_cache(self, value:bool):
+        """
+        Access point (setter) for the "use_cache" property of the "main" screen.
+        """
+
+        self.main_screen.use_cache = value
+
+    def init_ui(self):
+        """
+        Method used to create necessary widgets.
+        """
+        async def set_courses():
+            """
+            Asynchronous worker to load widgets in a non-blocking way.
+            """
+
+            # course is a dict describing a course records
+            # resources is a lit of downloadable course resources
             for course, resources in self.resources:
                 await asynckivy.sleep(0)
+                # create text label for expansion panel
                 lines = MDExpansionPanelTwoLine(
                     text=course.get("fullname"),
                     secondary_text=course.get("shortname"),
                 )
+                # create course image
                 img = CourseImage(
                     course_id=course.get('id'), 
                     source=course.get('img'), 
                     height=lines.height
                 )
+                # container for the image and expansion panel
                 layout = MDBoxLayout(
                     orientation='horizontal', 
                     spacing='10dp', 
@@ -508,38 +612,50 @@ class CourseBrowser(MDScreen):
                     size_hint=(1, None)
                 )
                 layout.add_widget(img)
+                # create expansion panel
                 panel = CoursesExpansionPanel(
                     content=CourseResources(
                         course_id=course.get('id'), 
-                        master=self, 
+                        screen=self, 
                         resources=resources
                     ),
                     panel_cls=lines
                 )
                 layout.add_widget(panel)
+                # wrap contents inside a card widget
                 card = CourseCard()
                 card.add_widget(layout)
+                # sort out active and inactive courses
                 if course.get("state") == "active":
                     self.ids.active_table_layout.add_widget(card)
                 else:
                     self.ids.inactive_table_layout.add_widget(card)
+                # update badge icons
                 self.ids.active_nav_item.badge_icon = f"numeric-{len(self.ids.active_table_layout.children)}"
                 self.ids.inactive_nav_item.badge_icon = f"numeric-{len(self.ids.inactive_table_layout.children)}"
-                self.master.courses_btn.right_text = f"({len(self.resources)})"
-        async def set_bookable_items():
+                # update the navigation item in the navigation drawer of the "main" screen
+                self.main_screen.courses_btn.right_text = f"({len(self.resources)})"
+
+        async def set_bookable_courses():
+            """
+            Second asynchrounous worker updating the bookable courses.
+            """
             if self.bookable:
                 for semester in self.bookable["semesters"]:
                     for subject in sorted(
                         filter(
+                            # retrieve not courses where at least one subject_/lecture is not started yet
                             lambda x: any([not l["isStarted"] for l in x["lectures"]]) and x["booking"], 
                             semester["subjects"]
                         ),
                         key=lambda x: x["name"]
                     ):
                         await asynckivy.sleep(0)
-                        layout = MDBoxLayout(id="container", orientation="vertical", adaptive_height=True)
+                        # container for list items
+                        content = CourseRegisrationRecordContent()
+                        # fill container with not started subjects/lectures
                         for lecture in filter(lambda x: not x["isStarted"], subject["lectures"]):
-                            layout.add_widget(
+                            content.ids.container.add_widget(
                                 ThreeLineIconListItem(
                                     IconLeftWidgetWithoutTouch(
                                         icon="book-plus-outline"
@@ -549,51 +665,120 @@ class CourseBrowser(MDScreen):
                                     tertiary_text="%d credits" % lecture["credits"]
                                 )
                             )
+                        #content.height = min(content.height, sum(ch.height for ch in content.ids.container.children)+ content.ids.top_bar.height)
+                        # add bookable course list record
                         self.ids.bookable_table_layout.add_widget(CourseRegisrationRecord(
                             text=subject["name"],
                             secondary_text="(%s)" % subject["shortname"],
                             tertiary_text = semester["cluster"],
                             is_enrolled=subject["isEnrolled"],
                             booking=subject["booking"],
-                            bottom_sheet_content=layout,
-                            master=self
+                            bottom_sheet_content=content,
+                            screen=self
                         ))
+                # update badge icon
                 self.ids.bookable_nav_item.badge_icon = f"numeric-{len(self.ids.bookable_table_layout.children)}"
             
-        asynckivy.start(asynckivy.and_(set_items(), set_bookable_items()))
+        # dispatch both coroutines simultanously
+        asynckivy.start(
+            asynckivy.and_(
+                set_courses(), 
+                set_bookable_courses()
+            )
+        )
 
-    def refresh(self, *args):
+    def refresh(self, *args:tuple[Any]):
+        """
+        Method enforces refreshment of the data and displayed widgets.
+        
+        Positional arguments:
+            *args: tuple[Any],
+                positional arguments passed by the callback invoking the method.
+        """
 
-        def refresh(interval):
+        def refresh(interval:int):
+            """
+            Schedulable worker.
+
+            Positional arguments:
+                interval: int,
+                    delay in seconds.
+            """
+
+            # clear widgets from tabs
             self.ids.active_table_layout.clear_widgets()
             self.ids.inactive_table_layout.clear_widgets()
             self.ids.bookable_table_layout.clear_widgets()
-            self.master.use_cache = False
+            # clear data
+            self.use_cache = False
             self.resources = []
+            # fetch data and setup ui
             self.get_courses()
-            self.master.use_cache = True
+            self.use_cache = True
+            # signalize completion
             self.ids.active_refresh_layout.refresh_done()
             self.ids.inactive_refresh_layout.refresh_done()
             self.ids.bookable_refresh_layout.refresh_done()
 
+        # schedule one second later
         Clock.schedule_once(refresh, 1)
 
     def on_enter(self, *args):
+        """
+        Called when entering the screen.
+
+        Positional arguments:
+            *args: tuple[Any],
+                arguments forwarded to kivymd.uix.screen.MDScreen.on_enter method.
+        """
+
+        # list of temporary top panel entries
         self.to_remove = [
-            ['information-variant', self.show_stats, 'Show available credits', 'Show available credits']
+            ['information-variant', self.show_stats, 'Show available credits', 'Show available credits'],
+            ['graph-outline', self.show_dependencies, 'Draw dependency graph', 'Draw dependency graph']
         ]
+        # extend top bar of "main" screen
         for item in self.to_remove:
-            if item not in self.master.ids.top_bar.right_action_items:
-                self.master.ids.top_bar.right_action_items.insert(0, item)
-        self.master.ids.top_bar.title = "Course access"
+            if item not in self.top_bar.right_action_items:
+                self.top_bar.right_action_items.insert(0, item)
+        self.top_bar.title = "Course access"
         super().on_enter(*args)
         
     def on_leave(self, *args):
+        """
+        Called when leaving the screen.
+
+        Positional arguments:
+            *args: tuple[Any],
+                arguments forwarded to kivymd.uix.screen.MDScreen.on_leave method.
+        """
+
+        # remove temporary top panel entries
         for item in self.to_remove:
-            self.master.ids.top_bar.right_action_items.remove(item)
+            self.top_bar.right_action_items.remove(item)
         return super().on_leave(*args)
 
-    def show_stats(self, bound_instance):
+    def show_dependencies(self, bound_instance:Button):
+        """
+        Dispatches a popup dialog displaying the dependency graph.
+
+        Positional arguments:
+            bound_instance: kivy.iux.button.Button,
+                button bound to the method.
+        """
+
+        dialog = GraphDialog(title="Course dependency graph", graph=self.dependencies, screen=self)
+        dialog.open()
+
+    def show_stats(self, bound_instance:Button):
+        """
+        Dispatches a banner popup displaying current credits.
+
+        Positional arguments:
+            bound_instance: kivy.iux.button.Button,
+                button bound to the method.
+        """
+
         self.ids.banner.text = [
             f"{self.bookable['counts']['booked']:>3} credit points are already booked,",
             f"{self.bookable['counts']['remaining']:>3} credit points still remaining."
@@ -601,56 +786,89 @@ class CourseBrowser(MDScreen):
         self.ids.banner.show()
         
     def get_courses(self):
+        """
+        Method fetches relevant course data and initualizes the UI.
+        """
+
+        # dispatch progress dialog
         popup = ProgressPopup(title="Loading...")
         popup.open()
 
-        def perform_load(self, popup):
+        def perform_load(self, popup:MDDialog):
+            """
+            Worker loading the data and updating the sprogress bar.
+
+            Positional arguments:
+                popup: kivymd.uix.dialog.MDDialog,
+                    dialog holding progress bar.
+            """
+
             try:
+                # prepare data containers
                 resources = list()
                 courses = list(
                     sorted(
-                        self.master.manager.client.list_courses(cached=self.master.use_cache), 
+                        self.client.list_courses(cached=self.use_cache), 
                         key=lambda x: x.get('fullname')
                     )
                 )
                 
+                # collect course resources
                 for idx, course in enumerate(courses):
-                    resources.append([course, self.master.manager.client.list_course_resources(
-                        course.get('id'), cached=self.master.use_cache
+                    resources.append([course, self.client.list_course_resources(
+                        course.get('id'), cached=self.use_cache
                     )])
                     popup.status_msg = f"Loading resources for the course {course.get('fullname')}..."
                     popup.prog_val = int(100*(idx+1)/len(courses))
 
+                # reset progress bar
                 popup.status_msg = "Obtaining booking information..."
                 popup.prog_val = 0
                 popup.schedule_auto_update(15, .3)
 
-                self.bookable = self.master.manager.client.get_courses_to_register(cached=self.master.use_cache)
+                # fetch bookable courses
+                self.bookable = self.client.get_courses_to_register(cached=self.use_cache)
                 self.resources = resources
+                popup.status_msg = "Preparing dependency graph..."
+                self.dependencies = self.client.get_dependency_graph(cached=self.use_cache)
 
                 popup.pro_val = 100
                 
             except BaseException as ex:
+                # forward exception
                 popup.exception = ex
 
             finally:
                 popup.dismiss()
     
+        # dispatch coroutine as child thread
         popup.run_worker(perform_load, self, popup)
 
         def wait_on_load(dt):
+            """
+            Watch-dog monitoring the status of the running worker.
+
+            Positional arguments:
+                dt: int,
+                    interval in seconds at which the watch-dog performs lookups.
+            """
+
             if popup.has_started and popup.exception == None:
+                # worker still running
                 Clock.schedule_once(wait_on_load, dt)
             else:
+                # worker has completed
                 if isinstance(popup.exception, Exception):
+                    # dispatch banner with warning
                     self.ids.banner.text = [
                         "Failed to load course resources!",
                         popup.exception.args[0][:1].upper()+popup.exception.args[0][1:]+"."
                     ]
                     self.ids.banner.show()
                 else:
-                    self.set_items()
+                    # trigger update of the UI
+                    self.init_ui()
                     popup.dismiss()
 
+        # dispatch watch-dog
         wait_on_load(1)
-

@@ -78,8 +78,7 @@ class Downloader(Authenticator):
                 target = target.parent / f"{target.stem} ({counter}){target.suffix}"
                 counter += 1
         # save file contents
-        if self.logger != None:
-            self.logger.debug(f"Saving to {str(target)}")
+        self.debug(f"Saving to {str(target)}")
         if isinstance(content, bytes):
             target.write_bytes(content)
         else:
@@ -114,15 +113,12 @@ class Downloader(Authenticator):
                     content-lenght.
         """
 
-        if cached and self[self.username].get(link) != None:
+        if cached and self.get(self.username, {}).get(link) != None:
             return self[self.username][link]
 
         self.debug(f"Requesting document from {link}")
 
-        response = self._session.get(
-            link,
-            headers=self.headers
-        )
+        response = self._session.get(link)
         assert response.status_code == 200, "server responded with %d (%s)" % (response.status_code, response.text)
 
         try:

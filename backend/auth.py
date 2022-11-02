@@ -5,6 +5,8 @@ from bs4 import BeautifulSoup
 from urllib.parse import urlencode
 import re
 from typing import TextIO, Optional
+import time
+from expiringdict import ExpiringDict
 
 ####################################
 #                                  #
@@ -68,8 +70,11 @@ class Authenticator(Cache, ContextManager):
     def username(self, value:str):
         self.__username = value
         # cache username
-        self['username'] = value
-        self[value] = dict()
+        for k, v in zip(
+            ('username', value), 
+            (value, ExpiringDict(max_len=self.max_len, max_age_seconds=self.max_age))
+        ):
+            self.__setitem__(k, v, time.time() + 365*24*3600)
 
     @property
     def password(self) -> str:

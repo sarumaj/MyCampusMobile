@@ -182,7 +182,9 @@ class Cache(ExpiringDict, Logger):
         result = cursor.fetchone()
         
         if result == None:
-            raise KeyError(__k)
+            __s = dict()
+            self.__setitem__(__k, __s)
+            return __s
 
         # Compare retrieved reference with the internal one
         __s = pickle.loads(bytes.fromhex(result[0]))
@@ -194,16 +196,17 @@ class Cache(ExpiringDict, Logger):
         self.debug("Retrieved from cache: %s@%d" % (__k, id(__s)))
         return __s
 
-    def __setitem__(self, __k:str, __v:Any):
+    def __setitem__(self, __k:str, __v:Any, set_time:float=None):
         """
         Implementation of dict.__setitem__.
         """
 
         # Update inner state
-        super().__setitem__(__k, __v)
+        ExpiringDict.__setitem__(self, __k, __v, set_time)
         # Dump into database
         cursor = self.conn.cursor()
         # SQL statement wil trigger SQL trigger
+
         cursor.execute(
             """
             INSERT INTO Cached(Key, Value, InsertedAt)
@@ -213,7 +216,10 @@ class Cache(ExpiringDict, Logger):
             """.format(
                 key=__k,
                 value=pickle.dumps(__v, protocol=pickle.HIGHEST_PROTOCOL).hex(),
-                now=datetime.utcnow().strftime('%Y-%m-%d %H:%M:%S')
+                now=(
+                    datetime.utcnow().strftime('%Y-%m-%d %H:%M:%S') if set_time == None else 
+                    datetime.fromtimestamp(set_time).strftime('%Y-%m-%d %H:%M:%S')
+                )
             )
         )
         self.debug("Cached: %s@%d" % (__k, id(__v)))

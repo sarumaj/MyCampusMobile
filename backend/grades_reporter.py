@@ -65,7 +65,7 @@ class GradesReporter(Authenticator):
 
         """
 
-        if cached and self[self.username].get('grades') != None:
+        if cached and self.get(self.username, {}).get('grades') != None:
             return self[self.username]['grades']        
     
         # call PHP endpoint
