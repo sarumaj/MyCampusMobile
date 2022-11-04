@@ -43,10 +43,11 @@ class CacheTestCase(unittest.TestCase):
             self.cache['dict'] = dict()
             self.cache.get('dict', {})['integer'] = 1
             self.assertEqual(self.cache.get('dict'), {'integer':1}, "failed to store dict object")
-            self.cache['dict2']['integer'] = 1
-            self.assertEqual(self.cache.get('dict2'), {'integer':1}, "failed to store dict object")
+            with self.assertRaises(KeyError):
+                self.cache['dict2']['integer'] = 1
+            self.assertEqual(self.cache.get('dict2'), None, "expected failure")
             self.cache.get('dict3', {})['integer'] = 1
-            self.assertEqual(self.cache.get('dict3'), {'integer':1}, "failed to store dict object")
+            self.assertEqual(self.cache.get('dict3'), None, "expected failure")
 
         def test_extending_life_time(self):
             future = time.time() + 1_000_000

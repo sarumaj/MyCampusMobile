@@ -65,8 +65,8 @@ class GradesReporter(Authenticator):
 
         """
 
-        if cached and self.get(self.username, {}).get('grades') != None:
-            return self[self.username]['grades']        
+        if cached and self.get(f'{self.username}.grades') != None:
+            return self[f'{self.username}.grades']        
     
         # call PHP endpoint
         self.debug("Requesting legend object")
@@ -93,7 +93,7 @@ class GradesReporter(Authenticator):
         }
         regex = re.compile('|'.join(map(re.escape, legend.keys()))) 
         semesters = soup.find_all('div', class_='panel panel-default')
-        self[self.username]['grades'] = dict()
+        result = dict()
         # iterate over semesters
         for semester in semesters:
             semester_div = semester.select_one('div[class="panel-heading"]')
@@ -107,7 +107,8 @@ class GradesReporter(Authenticator):
                 # map table headers to rows
                 grades = list(
                     filter(
-                        lambda x: x.get('Grade', '') != '',
+                        # get only subject lectures
+                        lambda x: re.match('^\w+0[1-9]$', x.get('ID', '')),
                         [
                             dict(
                                 zip(
@@ -118,16 +119,9 @@ class GradesReporter(Authenticator):
                         ]
                     )
                 )
-                # merge table rows (two per record)
-                grades = [
-                    {
-                        **el, 
-                        **{k:v for k,v in grades[i*2+1].items() if v}
-                    } for i, el in enumerate(grades[::2])
-                ]
 
                 if grades:
-                    self[self.username]['grades'][semester_div.text] = [
+                    result[semester_div.text] = [
                         {
                             k: (
                                 regex.sub(
@@ -138,13 +132,13 @@ class GradesReporter(Authenticator):
                                 (
                                     float(v.replace(',', '.')) 
                                         if v != '' else 
-                                    float('nan')
+                                    0.0
                                 )
-                                    if k == 'Grade' and v != '' else 
+                                    if k == 'Grade' else 
                                 (
                                     float(v.split('/')[0].strip())/100 
                                         if v != '' else 
-                                    float('nan')
+                                    0.0
                                 )
                                     if k == 'Rating' else 
                                 (
@@ -162,8 +156,9 @@ class GradesReporter(Authenticator):
                             ) for k,v in gr.items()
                         } for gr in grades 
                     ]
+        self[f'{self.username}.grades']  = result
         self.debug("Successfully retrieved grades")
-        return self[self.username]['grades']
+        return result
 
 if __name__ == '__main__':
     with GradesReporter(

@@ -11,6 +11,7 @@ from kivymd.uix.relativelayout import MDRelativeLayout
 from kivymd.uix.button.button import MDRectangleFlatIconButton
 from kivy.uix.behaviors.focus import FocusBehavior
 from typing import Any
+import random
 
 ####################################
 #                                  #
@@ -184,15 +185,15 @@ class LoginWindow(MDScreen):
                     custom popup displaying progress of the sign-in procedure.
             """
             try:
-                # dispatch random update of the progress values
-                popup.schedule_auto_update(30, .2)
-
                 # perform sign-in actions
                 popup.status_msg = "Establishing connection..."
                 SAMLrequest = self.client.get_saml_request()
+                popup.prog_val = random.randint(1, 50)
+                
 
                 popup.status_msg = "Exchanging handshake.."
                 SAMLresponse = self.client.get_saml_response(SAMLrequest)
+                popup.prog_val = random.randint(1, 50)
 
                 popup.status_msg = "Signing in..."
                 self.client.submit_saml_response(SAMLresponse)

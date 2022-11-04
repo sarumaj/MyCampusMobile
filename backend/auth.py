@@ -70,11 +70,7 @@ class Authenticator(Cache, ContextManager):
     def username(self, value:str):
         self.__username = value
         # cache username
-        for k, v in zip(
-            ('username', value), 
-            (value, ExpiringDict(max_len=self.max_len, max_age_seconds=self.max_age))
-        ):
-            self.__setitem__(k, v, time.time() + 365*24*3600)
+        self.__setitem__('username', value, time.time() + 365*24*3600)
 
     @property
     def password(self) -> str:
@@ -138,7 +134,7 @@ class Authenticator(Cache, ContextManager):
     def get_saml_request(self) -> str:
         self.debug("Retrieving SAML request")
         # initialize session with response from mycampus
-        response = self._session.get("https://mycampus.iubh.de/my/")
+        response = self._session.get("https://mycampus.iubh.de/my")
         assert response.status_code == 200, "server responded with %d (%s)" % (response.status_code, response.text)
         # scrap SAML request for authentication
         soup = BeautifulSoup(response.text, 'html.parser')

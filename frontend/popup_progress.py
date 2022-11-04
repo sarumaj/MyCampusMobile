@@ -79,6 +79,17 @@ class ProgressPopup(MDDialog):
 
         return self.content_cls.total
 
+    @total.setter
+    def total(self, __v:int):
+        """
+        Access point (setter) for the maximum value of the progress bar.
+
+        Positional arguments:
+            int
+        """
+
+        self.content_cls.total = __v
+
     @property
     def status_msg(self) -> str:
         """

@@ -1,0 +1,76 @@
+#:kivy 2.1.0
+    
+<ExamResults>:
+    size_hint: (1, 1)
+    check: False
+
+<RefreshableScrollViewBoth@MDScrollViewRefreshLayout>:
+    size_hint: (1, 1)
+    do_scroll_x: True
+    do_scroll_y: True
+    scroll_type: ['bars', 'content']
+
+<ExamResultModifyRequestContent>:
+    orientation: "vertical"
+    adaptive_height: True
+    padding: (dp(10), dp(10), dp(10), dp(10))
+
+    MDTopAppBar:
+        id: top_bar
+        title: 'Modify exam result:'
+
+    MDGridLayout:
+        id: container
+        cols: 2
+        size_hint_x: 1
+        adaptive_height: True
+
+        MDLabel:
+            size_hint_x: .2
+            text: "{0:.1f} ({1:5.2%})".format(root.data_table.get_grade_for_rating(grade_slider.value_normalized), grade_slider.value_normalized)
+            halign: "right"
+            pos_hint: {"center_y": .5}
+
+        MDSlider:
+            id: grade_slider
+            size_hint_x: .8
+            max: 100
+            value: root.grade_value
+            pos_hint: {"center_y": .5}
+
+        MDLabel:
+            #id: cp_lbl
+            size_hint_x: .2
+            text: "%d Credits" % cp_slider.value
+            halign: "right"
+            pos_hint: {"center_y": .5}
+
+        MDSlider:
+            id: cp_slider
+            size_hint_x: .8
+            max: 30
+            value: root.credits_value
+            pos_hint: {"center_y": .5}
+                    
+    MDRectangleFlatIconButton:
+        id: row_apply
+        text: "Apply"
+        icon: "table-edit"
+        pos_hint: {"center_x": .5}
+        on_release:
+            root.data_table.apply_row(grade_slider.value_normalized, cp_slider.value)
+            root.data_table.bottom_sheet.dismiss()
+
+
+<GradeChecker>:
+    name: "grades"
+
+    RefreshableScrollViewBoth:
+        id: refresh_layout
+        refresh_callback: root.refresh
+        root_layout: box_layout
+
+        MDBoxLayout:
+            id: box_layout
+            size_hint: (1, 1)
+            orientation: "vertical"

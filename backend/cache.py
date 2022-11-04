@@ -182,9 +182,7 @@ class Cache(ExpiringDict, Logger):
         result = cursor.fetchone()
         
         if result == None:
-            __s = dict()
-            self.__setitem__(__k, __s)
-            return __s
+            raise KeyError(__k)
 
         # Compare retrieved reference with the internal one
         __s = pickle.loads(bytes.fromhex(result[0]))
@@ -193,7 +191,7 @@ class Cache(ExpiringDict, Logger):
         if id(__s) != id(__i):
             # mitigate reference mismatch (divergent memory address allocations)
             __s = __i
-        self.debug("Retrieved from cache: %s@%d" % (__k, id(__s)))
+        self.debug("Retrieved from cache: %s@%d(%s)" % (__k, id(__s), type(__s)))
         return __s
 
     def __setitem__(self, __k:str, __v:Any, set_time:float=None):
@@ -222,7 +220,7 @@ class Cache(ExpiringDict, Logger):
                 )
             )
         )
-        self.debug("Cached: %s@%d" % (__k, id(__v)))
+        self.debug("Cached: %s@%d(%s)" % (__k, id(__v), type(__v)))
 
     def __del__(self):
         """

@@ -80,7 +80,8 @@ class CourseRegisrationRecord(ThreeLineAvatarIconListItem):
     enroll_checkbox = ObjectProperty(None)
     # reference to the "courses" screen instance
     screen = ObjectProperty(None)
-
+    # reference to opened bottom sheet instance
+    bottom_sheet = ObjectProperty(None)
 
     def __init__(
         self, *, 
@@ -144,7 +145,8 @@ class CourseRegisrationRecord(ThreeLineAvatarIconListItem):
             self.enroll_checkbox.on_active(self, True)
             self.enroll_checkbox.active = True
         # open bottom sheet list
-        MDCustomBottomSheet(screen=self.bottom_sheet_content).open()
+        self.bottom_sheet = MDCustomBottomSheet(screen=self.bottom_sheet_content)
+        self.bottom_sheet.open()
         return super().on_release()
 
 class CourseEnroll(IRightBodyTouch, MDCheckbox):
@@ -154,6 +156,9 @@ class CourseEnroll(IRightBodyTouch, MDCheckbox):
 
     # reference to the parent widget
     parent_widget = ObjectProperty(None)
+    # reference to asynchronous content loader
+    # to track the content loading routine
+    asyncloader = ObjectProperty(None)
 
     def __init__(
         self, *, 
@@ -228,6 +233,9 @@ class CourseEnroll(IRightBodyTouch, MDCheckbox):
                 indicates the state of the checbox.
         """
 
+        if self.asyncloader != None and not self.asyncloader.done:
+            return
+
         async def book():
             """
             Asynchronous worker performing the enrollment.
@@ -261,7 +269,7 @@ class CourseEnroll(IRightBodyTouch, MDCheckbox):
                     self.active = check
 
         # dispatch
-        asynckivy.start(book())
+        self.asyncloader = asynckivy.start(book())
         return super().on_active(bound_instance, check)
 
 class CourseImage(AsyncImage, FitImage):
@@ -338,15 +346,15 @@ class CourseResources(MDBoxLayout):
         """
         self.course_id = course_id
         self.screen = screen
-        self.resources = resources
+        self.resources = list(filter(lambda x: isinstance(x, dict), resources))
         super().__init__(**kwargs)
-        for i in self.resources:
+        for resource in self.resources:
             # create button instance
             download_btn = OneLineIconListItem(
                 IconLeftWidgetWithoutTouch(icon="download-outline"), 
-                text=i.get("title")
+                text=resource.get("title")
             )
-            download_btn.bind(on_release=lambda bound_instance: self.download(bound_instance, i.get('link')))
+            download_btn.bind(on_release=lambda bound_instance: self.download(bound_instance, resource.get('link')))
             self.add_widget(download_btn)
 
     @property
@@ -521,6 +529,9 @@ class CourseBrowser(MDScreen):
     bookable = DictProperty({})
     # dependency graph
     dependencies = ObjectProperty(None)
+    # reference to asynchronous content loader
+    # to track the content loading routine
+    asyncloader = ObjectProperty(None)
 
     def __init__(self, *, main_screen:MDScreen, **kwargs:dict[str,Any]):
         """
@@ -665,7 +676,6 @@ class CourseBrowser(MDScreen):
                                     tertiary_text="%d credits" % lecture["credits"]
                                 )
                             )
-                        #content.height = min(content.height, sum(ch.height for ch in content.ids.container.children)+ content.ids.top_bar.height)
                         # add bookable course list record
                         self.ids.bookable_table_layout.add_widget(CourseRegisrationRecord(
                             text=subject["name"],
@@ -680,48 +690,36 @@ class CourseBrowser(MDScreen):
                 self.ids.bookable_nav_item.badge_icon = f"numeric-{len(self.ids.bookable_table_layout.children)}"
             
         # dispatch both coroutines simultanously
-        asynckivy.start(
+        self.asyncloader = asynckivy.start(
             asynckivy.and_(
                 set_courses(), 
                 set_bookable_courses()
             )
         )
 
-    def refresh(self, *args:tuple[Any]):
+    def refresh(self):
         """
         Method enforces refreshment of the data and displayed widgets.
-        
-        Positional arguments:
-            *args: tuple[Any],
-                positional arguments passed by the callback invoking the method.
         """
 
-        def refresh(interval:int):
-            """
-            Schedulable worker.
+        # do nothing if already dispatched
+        if self.asyncloader != None and not self.asyncloader.done:
+            return
 
-            Positional arguments:
-                interval: int,
-                    delay in seconds.
-            """
-
-            # clear widgets from tabs
-            self.ids.active_table_layout.clear_widgets()
-            self.ids.inactive_table_layout.clear_widgets()
-            self.ids.bookable_table_layout.clear_widgets()
-            # clear data
-            self.use_cache = False
-            self.resources = []
-            # fetch data and setup ui
-            self.get_courses()
-            self.use_cache = True
-            # signalize completion
-            self.ids.active_refresh_layout.refresh_done()
-            self.ids.inactive_refresh_layout.refresh_done()
-            self.ids.bookable_refresh_layout.refresh_done()
-
-        # schedule one second later
-        Clock.schedule_once(refresh, 1)
+        # clear widgets from tabs
+        self.ids.active_table_layout.clear_widgets()
+        self.ids.inactive_table_layout.clear_widgets()
+        self.ids.bookable_table_layout.clear_widgets()
+        # clear data
+        self.use_cache = False
+        self.resources = []
+        # fetch data and setup ui
+        self.get_courses()
+        self.use_cache = True
+        # signalize completion
+        self.ids.active_refresh_layout.refresh_done()
+        self.ids.inactive_refresh_layout.refresh_done()
+        self.ids.bookable_refresh_layout.refresh_done()
 
     def on_enter(self, *args):
         """

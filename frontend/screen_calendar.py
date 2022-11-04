@@ -154,7 +154,7 @@ class CalendarView(MDScreen):
                 ex.args[0][:1].upper()+ex.args[0][1:]+"."
             ]
             self.ids.banner.show()
-        finally:
+        else:
             self.ids.table_layout.add_widget(CalendarWidget(events=self.events['parsed']))
             self.main_screen.calendar_btn.right_text = f"({len(self.events['parsed'])})"
 
@@ -164,9 +164,9 @@ class CalendarView(MDScreen):
         """
 
         self.ids.table_layout.clear_widgets()
-        self.master.use_cache = False
+        self.use_cache = False
         self.get_events()
-        self.master.use_cache = True
+        self.use_cache = True
 
     def export(self, bound_instance:Button):
         """

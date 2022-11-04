@@ -113,8 +113,8 @@ class Downloader(Authenticator):
                     content-lenght.
         """
 
-        if cached and self.get(self.username, {}).get(link) != None:
-            return self[self.username][link]
+        if cached and self.get(f'{self.username}.{link}') != None and chunk == None:
+            return self[f'{self.username}.{link}']
 
         self.debug(f"Requesting document from {link}")
 
@@ -131,10 +131,12 @@ class Downloader(Authenticator):
 
         content_length = int(response.headers["Content-Length"])
 
-        if chunk == None:
-            self[self.username][link] = (content_disposition, response.content, content_length)
-        else:
-            self[self.username][link] = (content_disposition, response.iter_content(chunk_size=chunk), content_length)
-
         self.debug("Successfully downloaded content")
-        return self[self.username][link]
+        if chunk == None:
+            result = (content_disposition, response.content, content_length)
+            self[f'{self.username}.{link}'] = result
+            return result
+        return (content_disposition, response.iter_content(chunk_size=chunk), content_length)
+
+        
+        

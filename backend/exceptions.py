@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 
-from inspect import trace
 import traceback
+from typing import (Union, Callable, Any)
 
 # preamble to prevent unknown 
 
@@ -38,19 +38,36 @@ class ExceptionHandler:
     Decorator used to wrap class methods to handle inner exceptions gracefully.
     """
     
-    def __init__(self, msg:str, ex:Exception):
-        self.msg = msg
+    def __init__(self, message:Union[dict[Exception,str],str], ex:Exception):
+        """
+        Used to parametrize the caller.
+
+        Positional arguments:
+            message: Union[dict[Exception,str],str],
+                exception message or a mapping of exception messages matching expected exceptions.
+
+            ex: Exception,
+                exception to be raised with the custom message.
+        """
+
+        self.msg = message
         self.ex = ex
 
-    def __call__(self, func):
-        def inner(instance, *args, **kwargs):
+    def __call__(self, func:Callable):
+        def inner(instance:object, *args:tuple[Any], **kwargs:dict[str,Any]):
             try:
                 return func(instance, *args, **kwargs)
-            except:
+            except BaseException as ex:
                 # catch exception
                 try:
                     # raise custom exception
-                    raise self.ex(self.msg)
+                    if isinstance(self.msg, dict):
+                        for k, v in self.msg.items():
+                            if isinstance(ex, k):
+                                raise self.ex(v)
+                        raise self.ex("unknown exception occured")
+                    else:
+                        raise self.ex(str(self.msg))
                 except BaseException as ex:
                     # catch again
                     if isinstance(instance, Logger):

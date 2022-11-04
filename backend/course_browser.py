@@ -60,13 +60,13 @@ class CourseBrowser(Authenticator):
                 }, ...
             ]
         """
-        if cached and self.get(self.username, {}).get("courses") != None:
-            return self[self.username]["courses"]
+        if cached and self.get(f'{self.username}.courses') != None:
+            return self[f'{self.username}.courses']
 
         self.debug("Requesting course list")
         response = self._session.get("https://mycampus.iubh.de/my/")
         soup = BeautifulSoup(response.text, 'html.parser')
-        self[self.username]['courses'] = [
+        result = [
             {
                 'fullname': el.find('div', class_='fullname').text,
                 'shortname': el.find('div', class_='shortname').text,
@@ -78,8 +78,9 @@ class CourseBrowser(Authenticator):
                 *soup.find('div', id='courses-inactive').find_all('a', class_='courseitem')
             ]
         ]
+        self[f'{self.username}.courses'] = result
         self.debug("Successfully retrieved course list")
-        return self[self.username]['courses']
+        return result
 
     @ExceptionHandler("failed to obtain course resources", RequestFailed)
     def list_course_resources(self, course_id:int, *, cached:bool=False) -> list[dict]:
@@ -105,8 +106,8 @@ class CourseBrowser(Authenticator):
             ]
 
         """
-        if cached and self.get(self.username, {}).get('resources', {}).get(course_id):
-            return self[self.username]['resources'][course_id]
+        if cached and self.get(f'{self.username}.resources', {}).get(course_id):
+            return self[f'{self.username}.resources'][course_id]
 
         self.debug(f"Requesting course view for {course_id}")
 
@@ -119,8 +120,8 @@ class CourseBrowser(Authenticator):
         assert response.status_code == 200, "server responded with %d (%s)" % (response.status_code, response.text)
 
         soup = BeautifulSoup(response.text, 'html.parser')
-        self[self.username]['resources'] = {
-            **self.get(self.username, {}).get('resources', dict()),
+        result = {
+            **self.get(f'{self.username}.resources', dict()),
             **{
                     course_id: [
                     {
@@ -133,9 +134,10 @@ class CourseBrowser(Authenticator):
                 ]
             }
         }
+        self[f'{self.username}.resources'] = result
         self.debug("Successfully retrieved course view")
 
-        return self[self.username]['resources'][course_id]
+        return result
 
     @ExceptionHandler("failed to enroll", RequestFailed)
     def enroll(
@@ -243,14 +245,16 @@ class CourseBrowser(Authenticator):
             # retrieve booking id
             response = self._session.get("https://care-fs.iubh.de/en/study/curricular-course-registration.php")
             regex = re.compile('\{"id":"(\d+)","classId":"\d+","studyProgramId":"\d+","focusIds":\[.*\]\}')
-            self[self.username]['booking_id'] = regex.search(response.text).group(1)
+            booking_id = regex.search(response.text).group(1)
+            self[f'{self.username}.booking_id'] = booking_id
         except: 
-            if self.get(self.username, {}).get('booking_id'):
+            if self.get(f'{self.username}.booking_id', None):
                 self.warning("failed to retrieve booking id online")
             else:
                 raise
-        self.debug(f"Retrieved booking id: {self[self.username]['booking_id']}")
-        return self[self.username]['booking_id']
+        else:
+            self.debug(f"Retrieved booking id: {booking_id}")
+            return booking_id
 
     @ExceptionHandler("failed to request graded curriculum entries", RequestFailed)
     def get_graded_records(self) -> tuple[set[str]]:
@@ -268,7 +272,7 @@ class CourseBrowser(Authenticator):
         self.debug("Requesting graded curriculum entries")
         response = self._session.get(
             "https://care-fs.iubh.de/ajax/4713/CourseInscriptionCurricular/DefaultController/fetchCurriculumGrades",
-            params={"bookindId": self.get(self.username, {}).get('booking_id')}
+            params={"bookindId": self.get(f'{self.username}.booking_id')}
         )
         assert response.status_code == 200, "server responded with %d (%s)" % (response.status_code, response.text)
         passed_modules, passed_subjects = set(), set()
@@ -313,7 +317,7 @@ class CourseBrowser(Authenticator):
         self.debug("Requesting curriculum entries")
         response = self._session.get(
             "https://care-fs.iubh.de/ajax/4713/CourseInscriptionCurricular/DefaultController/fetchCurriculumEntry",
-            params={"bookindId": self.get(self.username, {}).get('booking_id')}
+            params={"bookindId": self.get(f'{self.username}.booking_id')}
         )
         assert response.status_code == 200, "server responded with %d (%s)" % (response.status_code, response.text)
         curriculum_entries = {
@@ -358,16 +362,16 @@ class CourseBrowser(Authenticator):
                 Graph instance.
         """
         self.debug("requested dependecy graph")
-        if cached and self.get(self.username, {}).get("dependency_graph"):
-            return self[self.username]["dependency_graph"]
+        if cached and self.get(f'{self.username}.dependency_graph'):
+            return self[f'{self.username}.dependency_graph']
 
         # make sure to have valid booking id
-        if not self.get(self.username, {}).get('booking_id'):
+        if not self.get(f'{self.username}.booking_id'):
             self.get_booking_id()
 
         response = self._session.get(
             "https://care-fs.iubh.de/ajax/4713/CourseInscriptionCurricular/DefaultController/fetchCurriculumEntry",
-            params={"bookindId": self.get(self.username, {}).get('booking_id')}
+            params={"bookindId": self.get(f'{self.username}.booking_id')}
         )
         assert response.status_code == 200, "server responded with %d (%s)" % (response.status_code, response.text)
         data = response.json()
@@ -419,8 +423,8 @@ class CourseBrowser(Authenticator):
             G.add_edge(*edge["edge"], weight=edge["weight"])
         
         self.debug("created: " + str(G))
-        self[self.username]["dependency_graph"] = G
-        return self[self.username]["dependency_graph"]
+        self[f'{self.username}.dependency_graph'] = G
+        return G
 
     @ExceptionHandler("failed to create booking context", RequestFailed)
     def create_booking_context(self, curriculum_entries:dict) -> dict: 
@@ -474,7 +478,7 @@ class CourseBrowser(Authenticator):
         self.debug("Retrieving lecture series")
         response = self._session.get(
             "https://care-fs.iubh.de/ajax/4713/CourseInscriptionCurricular/DefaultController/fetchCourses",
-            params={"bookindId": self.get(self.username, {}).get('booking_id')}
+            params={"bookindId": self.get(f'{self.username}.booking_id')}
         )
         assert response.status_code == 200, "server responded with %d (%s)" % (response.status_code, response.text)
         for course in response.json().values():
@@ -490,7 +494,7 @@ class CourseBrowser(Authenticator):
                                 # https://care-fs.iubh.de/ajax/4713/CourseInscriptionCurricular/DefaultController/CancelBooking
                                 "assignedSubjectIds": ','.join(map(str,[child['subjectId'] for child in subject["children"].values()])), 
                                 "curriculumEntryId": str(curriculumEntryId),
-                                "bookingId": str(self.get(self.username, {}).get('booking_id'))
+                                "bookingId": str(self.get(f'{self.username}.booking_id'))
                             }
                     elif course.get('subjectId'):
                         for child in subject["children"].values():
@@ -500,7 +504,7 @@ class CourseBrowser(Authenticator):
                                     "lectureSeriesId": str(course["lectureSeries"][0]["id"]),
                                     "assignedSubjectIds": "", 
                                     "curriculumEntryId": str(curriculumEntryId),
-                                    "bookingId": str(self.get(self.username, {}).get('booking_id'))
+                                    "bookingId": str(self.get(f'{self.username}.booking_id'))
                                 }
         self.debug("Successfully updated curriculum entries")
         return curriculum_entries
@@ -546,7 +550,7 @@ class CourseBrowser(Authenticator):
         # get enrolled courses
         response = self._session.get(
             "https://care-fs.iubh.de/ajax/4713/CourseInscriptionCurricular/DefaultController/fetchCourseTickets",
-            params={"bookindId": self.get(self.username, {}).get('booking_id')}
+            params={"bookindId": self.get(f'{self.username}.booking_id')}
         )
         assert response.status_code == 200, "server responded with %d (%s)" % (response.status_code, response.text)
         # mark curriculum entries with enrollment
@@ -582,7 +586,7 @@ class CourseBrowser(Authenticator):
         self.debug("Retrieving available credits")
         response = self._session.get(
             "https://care-fs.iubh.de/ajax/4713/CourseInscriptionCurricular/DefaultController/fetchCreditCounts",
-            params={"bookindId": self.get(self.username, {}).get('booking_id')}
+            params={"bookindId": self.get(f'{self.username}.booking_id')}
         )
         assert response.status_code == 200, "server responded with %d (%s)" % (response.status_code, response.text)
         self.debug("Successfully retrieved available credits")
@@ -656,8 +660,8 @@ class CourseBrowser(Authenticator):
             }
         )           
         """
-        if cached and self.get(self.username, {}).get('curriculum'):
-            return self[self.username]['curriculum']
+        if cached and self.get(f'{self.username}.curriculum'):
+            return self[f'{self.username}.curriculum']
 
         self.get_booking_id()
         curriculum_entries = self.update_enrolled_course_modules(
@@ -670,7 +674,7 @@ class CourseBrowser(Authenticator):
         credits = self.get_available_credits()         
 
         split = re.compile("(.*?)\s*\((.*)\)", re.DOTALL)
-        self[self.username]['curriculum'] = {
+        result = {
             "counts": credits,
             "semesters": [
                 {
@@ -712,7 +716,8 @@ class CourseBrowser(Authenticator):
                 } for k,v in curriculum_entries.items()
             ]
         }
-        return self[self.username]['curriculum'] 
+        self[f'{self.username}.curriculum'] = result
+        return result
 
 if __name__ == '__main__':
     with CourseBrowser(
