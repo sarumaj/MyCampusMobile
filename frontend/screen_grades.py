@@ -2,9 +2,7 @@
 
 from kivy.properties import (ObjectProperty, ListProperty, NumericProperty, BooleanProperty)
 from kivy.metrics import dp
-from kivy.core.window import Window
 from kivy.clock import Clock
-from dateutil.parser import parse
 from kivymd.uix.screen import MDScreen
 from kivymd.uix.datatables import MDDataTable
 import asynckivy
@@ -12,6 +10,10 @@ from typing import (Any, Callable)
 import re
 from kivymd.uix.bottomsheet import MDCustomBottomSheet
 from kivymd.uix.boxlayout import MDBoxLayout
+from kivy.uix.button import Button
+from kivymd.uix.toolbar import MDTopAppBar
+import csv
+from io import StringIO
 
 ####################################
 #                                  #
@@ -32,6 +34,7 @@ if __name__ == '__main__' and __package__ is None:
         pass
     __package__ = '.'.join(parent.parts[len(top.parts):])
 
+from .popup_save_dialog import SaveDialog
 from ..backend import Client
 
 ###############
@@ -41,6 +44,8 @@ from ..backend import Client
 ###############
 
 class ExamResultModifyRequestContent(MDBoxLayout):
+    """
+    """
     grade_value = NumericProperty(0)
     credits_value = NumericProperty(0)
     data_table = ObjectProperty(0)
@@ -88,7 +93,7 @@ class ExamResults(MDDataTable):
             )
             self.bottom_sheet.open()
     
-    def apply_row(self, rating:float, credits:int):
+    def apply_row(self, rating:float):
         old_data = self.table_data.row_data[self.row_index]
         new_data = tuple(old_data[:-4]) + (
             self.screen.get_status(
@@ -97,8 +102,7 @@ class ExamResults(MDDataTable):
                 "passed"
             ),
             "{0:.1f} ({1:.2%})".format(self.screen.get_grade_for_rating(rating), rating),
-            "%d CP" % credits
-        ) + tuple(old_data[-1:])
+        ) + tuple(old_data[-2:])
         async def update():
             await asynckivy.sleep(0)
             self.update_row(old_data, new_data)
@@ -128,32 +132,18 @@ class GradeChecker(MDScreen):
 
     @property
     def client(self) -> Client:
-        """
-        Access point to the client interface.
-
-        Returns:
-            backend.Client
-        """
-
         return self.main_screen.client
 
     @property
+    def top_bar(self) -> MDTopAppBar:
+        return self.main_screen.ids.top_bar
+
+    @property
     def use_cache(self) -> bool:
-        """
-        Access point to the "use_cache" property of the "main" screen.
-
-        Returns:
-            bool
-        """
-
         return self.main_screen.use_cache
 
     @use_cache.setter
     def use_cache(self, value:bool):
-        """
-        Access point (setter) for the "use_cache" property of the "main" screen.
-        """
-
         self.main_screen.use_cache = value
 
     def prepare_data_table(self):
@@ -166,6 +156,15 @@ class GradeChecker(MDScreen):
                 )
             )
         ]
+        # get credits for open exam records
+        self.client.get_booking_id()
+        for subject in self.client.get_curricullum_entries(set(), set()).values():
+            for module in subject["subjects"].values():
+                for course in module['children'].values():
+                    for _, record in self.grades:
+                        if record['ID'] in course['label']:
+                            record.update({"Credits": course['credits']})
+
         self.data_table = ExamResults(
             screen=self,
             rows_num = len(self.grades)+1,
@@ -181,17 +180,20 @@ class GradeChecker(MDScreen):
 
     def refresh(self, *args):
 
-        if self.asyncloader != None and not self.asyncloader.done:
-            return
+        def refresh_callback(interval):
+            if self.asyncloader != None and not self.asyncloader.done:
+                return
+            
+            self.data_table.clear_widgets()
+            self.use_cache = False
+            self.ids.box_layout.clear_widgets()
+            self.prepare_data_table()
+            self.ids.box_layout.add_widget(self.data_table)
+            self.set_items()
+            self.use_cache = True
+            self.ids.refresh_layout.refresh_done() 
         
-        self.data_table.clear_widgets()
-        self.use_cache = False
-        self.ids.box_layout.clear_widgets()
-        self.prepare_data_table()
-        self.ids.box_layout.add_widget(self.data_table)
-        self.set_items()
-        self.use_cache = True
-        self.ids.refresh_layout.refresh_done() 
+        Clock.schedule_once(refresh_callback, 1)
 
     def add_row(self, semester, record):
         status = record.get('Status', '').replace(', ', ',').split(',')
@@ -248,17 +250,21 @@ class GradeChecker(MDScreen):
             grade_rating, credit, trial = row[-3:]
             grade_rating_matches = re.match("(\d+\.\d+)\s?\((\d+\.\d+)%\)", grade_rating)
             if grade_rating_matches:
-                grades.append(float(grade_rating_matches.group(1)))
-                ratings.append(float(grade_rating_matches.group(2)))
-            credits.append(int(re.sub('[^\d]', '', credit)))
-            trials.append(int(re.sub('(?=[^\d]).*', '', trial)))
+                grade, rating, trial, credit = (
+                    *map(float, grade_rating_matches.groups()), 
+                    int(re.sub('(?=[^\d]).*', '', trial)), 
+                    int(re.sub('[^\d]', '', credit))
+                )
+                if grade * rating * credit > 0:
+                    grades.append(grade * credit)
+                    ratings.append(rating * credit)
+                    credits.append(credit)
+                if trial > 0:    
+                    trials.append(trial)
         
-        grades = list(filter(lambda x: x > 0, grades))
-        average_grade = len(grades) > 0 and sum(grades)/len(grades) or 0
-        ratings = list(filter(lambda x: x > 0, ratings))
-        average_ratings = (len(ratings) > 0 and sum(ratings)/len(ratings) or 0)/100
         sum_credits = sum(credits)
-        trials = list(filter(lambda x: x > 0, trials))
+        average_grade = sum_credits > 0 and sum(grades)/sum_credits or 0
+        average_ratings = (sum_credits > 0 and sum(ratings)/sum_credits or 0)/100
         average_trials =len(trials) > 0 and sum(trials)/len(trials) or 0
 
         icon_type = "checkbox-marked-circle"
@@ -304,4 +310,57 @@ class GradeChecker(MDScreen):
 
     def on_enter(self, *args):
         self.main_screen.ids.top_bar.title = "Exam results"
+        # list of temporary top panel entries
+        self.to_remove = [
+            ['file-export-outline', self.export, 'Export data', 'Export data'],
+        ]
+        # extend top bar of "main" screen
+        for item in self.to_remove:
+            if item not in self.top_bar.right_action_items:
+                self.top_bar.right_action_items.insert(0, item)
         return super().on_enter(*args)   
+
+    def on_leave(self, *args):
+        """
+        Called when leaving the screen.
+
+        Positional arguments:
+            *args: tuple[Any],
+                arguments forwarded to kivymd.uix.screen.MDScreen.on_leave method.
+        """
+
+        # remove temporary top panel entries
+        for item in self.to_remove:
+            self.top_bar.right_action_items.remove(item)
+        return super().on_leave(*args)
+
+    def export(self, bound_instance:Button):
+        bound_instance.disabled = True
+        content = StringIO()
+        writer = csv.writer(content, quoting=csv.QUOTE_NONNUMERIC)
+        writer.writerow(["Semester", "Course", "Status", "Grade", "Credits", "Attempt"])
+        writer.writerows(
+            list(
+                map(
+                    lambda x: list(
+                        map(
+                            lambda y: re.sub(
+                                '\[.*?\]', '', 
+                                str(isinstance(y, (list, tuple)) and y[-1] or y)
+                            ), 
+                            x
+                        )
+                    ), 
+                    self.data_table.table_data.row_data
+                )
+            )
+        )
+        # dispatch save dialog to get location to save the target file
+        spopup = SaveDialog(
+            content_disposition="exam_results.csv", 
+            save_method=lambda file, path: self.client.save(file, content.getvalue(), Path(path)),
+            banner=self.ids.banner
+        )
+        spopup.open()
+        bound_instance.disabled = False
+

@@ -70,7 +70,8 @@ class Authenticator(Cache, ContextManager):
     def username(self, value:str):
         self.__username = value
         # cache username
-        self.__setitem__('username', value, time.time() + 365*24*3600)
+        self['username'] = value
+        self.prolongate('username', 365*24*3600)
 
     @property
     def password(self) -> str:

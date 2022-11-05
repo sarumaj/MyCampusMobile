@@ -5,7 +5,8 @@ import dill as pickle
 from typing import Any
 from datetime import datetime
 from expiringdict import ExpiringDict
-from typing import TextIO, Optional
+from typing import (TextIO, Optional, Union)
+import time
 
 ####################################
 #                                  #
@@ -221,6 +222,21 @@ class Cache(ExpiringDict, Logger):
             )
         )
         self.debug("Cached: %s@%d(%s)" % (__k, id(__v), type(__v)))
+
+    def prolongate(self, key:str, seconds:Union[float,int]):
+        """
+        Extends the TTL of item by x seconds and resets its timer.
+
+        Positional arguments:
+            key: str,
+                item id.
+            
+            seconds: Union[float, int],
+                offset by which the regular TTL (max_age_seconds) will be temporarily extended.
+        """
+
+        __v = self.__getitem__(key)
+        return self.__setitem__(key, __v, set_time=(time.time() + self.max_age + seconds))
 
     def __del__(self):
         """

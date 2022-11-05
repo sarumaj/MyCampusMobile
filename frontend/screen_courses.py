@@ -60,10 +60,95 @@ from ..backend import Client
 #             #
 ###############
 
+class CourseStartRecord(ThreeLineIconListItem):
+    """
+    Widget stored in a bottom sheet list used to display a startable course.
+    """
+
+    # keyword arguments required to start the course
+    dispatch_ctx = DictProperty({})
+    # reference to the "courses" screen
+    screen = ObjectProperty(None)
+    # reference to the containing widget
+    parent_widget = ObjectProperty(None)
+
+    def __init__(
+        self, *args:tuple[Any],
+        dispatch_context:dict[str,str],
+        screen:MDScreen,
+        parent_widget,
+        **kwargs:dict[str,Any]
+    ):
+        """
+        Creates class instance with necessary references.
+
+        Positional arguments:
+            *args: tuple[Any],
+                positional arguments passed to the parent class.
+
+        Keyword arguments:
+            dispatch_context: dict[str,str],
+                keyword arguments required to start given course: 
+                {
+                    "enrolmentPeriodId": str,
+                    "lectureSeriesId": str,
+                    "curriculumEntryId": str,
+                    "bookingId": str
+                }
+
+            screen: MDScreen,
+                reference tot he implementing screen.
+
+            **kwargs: dict[str,Any],
+                keyword arguments of the parent class.
+        """
+
+        self.dispatch_ctx = dispatch_context
+        self.screen = screen
+        self.parent_widget = parent_widget
+        super().__init__(**kwargs)
+
+    @property
+    def client(self):
+        return self.screen.client
+
+    @property
+    def banner(self):
+        return self.screen.ids.banner
+
+    @property
+    def bottom_sheet(self):
+        return self.parent_widget.parent_widget.bottom_sheet
+
+    def on_release(self):
+        """
+        Ought to be triggered on release of the class instance.
+        """
+
+        try:
+            self.bottom_sheet.dismiss()
+            self.client.dispatch(**self.dispatch_ctx)
+            self.screen.refresh()
+            self.banner.text = [
+                'Successfully started new course!',
+                'It might take some time till the change takes the effect though...'
+            ]
+            self.banner.show()
+        except BaseException as ex:
+            # send warning as the banner of the "courses" screen
+            self.banner.text = [
+                f'Error occured processing the request to start the course!',
+                ex.args[0][:1].upper()+ex.args[0][1:]+"."
+            ]
+            self.banner.show()
+
 class CourseRegisrationRecordContent(MDBoxLayout):
     """
     Content for the bottom sheet object of the CourseRegisrationRecord.
     """
+
+    # reference to the parent widget
+    parent_widget = ObjectProperty(None)
 
 class CourseRegisrationRecord(ThreeLineAvatarIconListItem):
     """
@@ -249,7 +334,7 @@ class CourseEnroll(IRightBodyTouch, MDCheckbox):
                 except BaseException as ex:
                     # send warning as the banner of the main screen
                     self.banner.text = [
-                        f'Error occured while enrolling"!',
+                        f'Error occured while enrolling!',
                         ex.args[0][:1].upper()+ex.args[0][1:]+"."
                     ]
                     self.banner.show()
@@ -359,35 +444,14 @@ class CourseResources(MDBoxLayout):
 
     @property
     def client(self) -> Client:
-        """
-        Access point to the client interface.
-
-        Returns:
-            backend.Client
-        """
-
         return self.screen.client
 
     @property
     def use_cache(self) -> bool:
-        """
-        Access point to the "use_cache" property of the main screen.
-
-        Returns:
-            bool
-        """
-
         return self.screen.main_screen.use_cache
 
     @property
     def banner(self) -> MDBanner:
-        """
-        Access point to the banner instance of the main screen.
-
-        Returns:
-            kivymd.uix.banner.MDBanner
-        """
-
         return self.screen.ids.banner
             
     def download(self, bound_instance:Button, link:str):
@@ -552,49 +616,25 @@ class CourseBrowser(MDScreen):
 
     @property
     def client(self) -> Client:
-        """
-        Access point to the client interface.
-
-        Returns:
-            backend.Client
-        """
-
         return self.main_screen.client
 
     @property
     def top_bar(self) -> MDTopAppBar:
-        """
-        Access point to the client interface.
-
-        Returns:
-             kivymd.uix.toolbar.MDTopAppBar
-        """
-
         return self.main_screen.ids.top_bar
 
     @property
     def use_cache(self) -> bool:
-        """
-        Access point to the "use_cache" property of the "main" screen.
-
-        Returns:
-            bool
-        """
-
         return self.main_screen.use_cache
 
     @use_cache.setter
     def use_cache(self, value:bool):
-        """
-        Access point (setter) for the "use_cache" property of the "main" screen.
-        """
-
         self.main_screen.use_cache = value
 
     def init_ui(self):
         """
         Method used to create necessary widgets.
         """
+
         async def set_courses():
             """
             Asynchronous worker to load widgets in a non-blocking way.
@@ -666,18 +706,22 @@ class CourseBrowser(MDScreen):
                         content = CourseRegisrationRecordContent()
                         # fill container with not started subjects/lectures
                         for lecture in filter(lambda x: not x["isStarted"], subject["lectures"]):
-                            content.ids.container.add_widget(
-                                ThreeLineIconListItem(
-                                    IconLeftWidgetWithoutTouch(
-                                        icon="book-plus-outline"
-                                    ),
-                                    text=lecture["name"],
-                                    secondary_text="(%s)" % lecture["shortname"],
-                                    tertiary_text="%d credits" % lecture["credits"]
+                            if lecture.get("dispatching"):
+                                content.ids.container.add_widget(
+                                    CourseStartRecord(
+                                        IconLeftWidgetWithoutTouch(
+                                            icon="book-plus-outline"
+                                        ),
+                                        screen=self,
+                                        dispatch_context=lecture["dispatching"],
+                                        parent_widget=content,
+                                        text=lecture["name"],
+                                        secondary_text="(%s)" % lecture["shortname"],
+                                        tertiary_text="%d credits" % lecture["credits"]
+                                    )
                                 )
-                            )
                         # add bookable course list record
-                        self.ids.bookable_table_layout.add_widget(CourseRegisrationRecord(
+                        reg_record = CourseRegisrationRecord(
                             text=subject["name"],
                             secondary_text="(%s)" % subject["shortname"],
                             tertiary_text = semester["cluster"],
@@ -685,7 +729,9 @@ class CourseBrowser(MDScreen):
                             booking=subject["booking"],
                             bottom_sheet_content=content,
                             screen=self
-                        ))
+                        )
+                        content.parent_widget = reg_record
+                        self.ids.bookable_table_layout.add_widget(reg_record)
                 # update badge icon
                 self.ids.bookable_nav_item.badge_icon = f"numeric-{len(self.ids.bookable_table_layout.children)}"
             
@@ -702,24 +748,28 @@ class CourseBrowser(MDScreen):
         Method enforces refreshment of the data and displayed widgets.
         """
 
-        # do nothing if already dispatched
-        if self.asyncloader != None and not self.asyncloader.done:
-            return
+        def refresh_callback(interval):
+            # do nothing if already dispatched
+            if self.asyncloader != None and not self.asyncloader.done:
+                return
 
-        # clear widgets from tabs
-        self.ids.active_table_layout.clear_widgets()
-        self.ids.inactive_table_layout.clear_widgets()
-        self.ids.bookable_table_layout.clear_widgets()
-        # clear data
-        self.use_cache = False
-        self.resources = []
-        # fetch data and setup ui
-        self.get_courses()
-        self.use_cache = True
-        # signalize completion
-        self.ids.active_refresh_layout.refresh_done()
-        self.ids.inactive_refresh_layout.refresh_done()
-        self.ids.bookable_refresh_layout.refresh_done()
+            # clear widgets from tabs
+            self.ids.active_table_layout.clear_widgets()
+            self.ids.inactive_table_layout.clear_widgets()
+            self.ids.bookable_table_layout.clear_widgets()
+            # clear data
+            self.use_cache = False
+            self.resources = []
+            self.bookable = {}
+            # fetch data and setup ui
+            self.get_courses()
+            self.use_cache = True
+            # signalize completion
+            self.ids.active_refresh_layout.refresh_done()
+            self.ids.inactive_refresh_layout.refresh_done()
+            self.ids.bookable_refresh_layout.refresh_done()
+
+        Clock.schedule_once(refresh_callback, 1)
 
     def on_enter(self, *args):
         """

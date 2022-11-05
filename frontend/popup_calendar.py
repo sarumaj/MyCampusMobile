@@ -385,7 +385,7 @@ class CalendarEventContent(MDBoxLayout):
                 # if the dates in the range differ, dispatch dialog to retrieve datewha
                 date_dialog = MDDatePicker(
                     year=getattr(self, boundary).year, 
-                    month=getattr(self, boundary), 
+                    month=getattr(self, boundary).month, 
                     day=getattr(self, boundary).day
                 )
                 date_dialog.title = "Filter by start date"

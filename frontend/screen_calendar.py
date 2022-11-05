@@ -5,7 +5,7 @@ from kivymd.uix.screen import MDScreen
 from typing import Any
 from kivymd.uix.toolbar import MDTopAppBar
 from kivy.uix.button import Button
-from kivymd.uix.banner import MDBanner
+from kivy.clock import Clock
 
 ####################################
 #                                  #
@@ -67,43 +67,18 @@ class CalendarView(MDScreen):
 
     @property
     def client(self) -> Client:
-        """
-        Access point to the client interface.
-
-        Returns:
-            backend.Client
-        """
-
         return self.main_screen.client
 
     @property
     def top_bar(self) -> MDTopAppBar:
-        """
-        Access point to the top bar of the "main" screen.
-
-        Returns:
-             kivymd.uix.toolbar.MDTopAppBar
-        """
-
         return self.main_screen.ids.top_bar
 
     @property
     def use_cache(self) -> bool:
-        """
-        Access point to the "use_cache" property of the "main" screen.
-
-        Returns:
-            bool
-        """
-
         return self.main_screen.use_cache
 
     @use_cache.setter
     def use_cache(self, value:bool):
-        """
-        Access point (setter) for the "use_cache" property of the "main" screen.
-        """
-
         self.main_screen.use_cache = value
 
     def on_enter(self, *args):
@@ -163,10 +138,14 @@ class CalendarView(MDScreen):
         Method enforces refreshment of the data and displayed widgets.
         """
 
-        self.ids.table_layout.clear_widgets()
-        self.use_cache = False
-        self.get_events()
-        self.use_cache = True
+        def refresh_callback(interval):
+            self.ids.table_layout.clear_widgets()
+            self.use_cache = False
+            self.get_events()
+            self.use_cache = True
+
+        
+        Clock.schedule_once(refresh_callback, 1)
 
     def export(self, bound_instance:Button):
         """

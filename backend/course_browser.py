@@ -338,7 +338,8 @@ class CourseBrowser(Authenticator):
                         )
                     }, **{'isEnrolled': False}} for entry in semester.get('children')
                     if entry.get('moduleId') not in passed_modules 
-                    and not set(entry.get('presupposedModuleIds', [])) - passed_modules
+                    and not set(entry.get('presupposedModuleIds', [])) - passed_modules 
+                    or not passed_modules
                 } 
             } for semester in response.json()['curriculumEntries']
         }

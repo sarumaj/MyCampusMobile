@@ -21,14 +21,15 @@
 
     MDGridLayout:
         id: container
-        cols: 2
+        cols: 3
         size_hint_x: 1
+        padding: dp(10)
         adaptive_height: True
 
         MDLabel:
             size_hint_x: .2
-            text: "{0:.1f} ({1:5.2%})".format(root.data_table.get_grade_for_rating(grade_slider.value_normalized), grade_slider.value_normalized)
-            halign: "right"
+            text: "{0:.1f} ({1:.2%})".format(root.data_table.get_grade_for_rating(grade_slider.value_normalized), grade_slider.value_normalized)
+            halign: "left"
             pos_hint: {"center_y": .5}
 
         MDSlider:
@@ -37,33 +38,29 @@
             max: 100
             value: root.grade_value
             pos_hint: {"center_y": .5}
-
-        MDLabel:
-            #id: cp_lbl
-            size_hint_x: .2
-            text: "%d Credits" % cp_slider.value
-            halign: "right"
-            pos_hint: {"center_y": .5}
-
-        MDSlider:
-            id: cp_slider
-            size_hint_x: .8
-            max: 30
-            value: root.credits_value
-            pos_hint: {"center_y": .5}
+            hint: False
                     
-    MDRectangleFlatIconButton:
-        id: row_apply
-        text: "Apply"
-        icon: "table-edit"
-        pos_hint: {"center_x": .5}
-        on_release:
-            root.data_table.apply_row(grade_slider.value_normalized, cp_slider.value)
-            root.data_table.bottom_sheet.dismiss()
+        MDRectangleFlatIconButton:
+            id: row_apply
+            text: "Apply"
+            icon: "table-edit"
+            line_color: (0, 0, 0, 0)
+            pos_hint: {"center_x": .5}
+            on_release:
+                root.data_table.apply_row(grade_slider.value_normalized)
+                root.data_table.bottom_sheet.dismiss()
 
 
 <GradeChecker>:
     name: "grades"
+
+    MDBanner:
+        id: banner
+        text: []
+        over_widget: root
+        vertical_pad: root.main_screen.ids.top_bar.height - self.height
+        type: "two-line"
+        right_action: ["CLOSE", lambda bound_instance: self.hide()]
 
     RefreshableScrollViewBoth:
         id: refresh_layout
