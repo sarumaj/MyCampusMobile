@@ -14,14 +14,15 @@
         over_widget: main_layout
         vertical_pad: 0
         type: "two-line"
-        right_action: ["CLOSE", lambda bound_instance: self.hide()]
+        right_action: ["CLOSE", lambda bound_instance: (self.hide(), setattr(theme_switcher, 'disabled', False))]
 
     AnchorLayout:
         anchor_x: "right"
         anchor_y: "top"
 
         MDIconButton:
-            icon: "blank" # "theme-light-dark"
+            id: theme_switcher
+            icon: "theme-light-dark"
             theme_icon_color: "Custom"
             icon_color: app.theme_cls.primary_color
             on_release:

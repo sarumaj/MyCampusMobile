@@ -1,11 +1,14 @@
 # -*- coding: utf-8 -*-
 
-from kivy.properties import (ObjectProperty, StringProperty, DictProperty)
-from kivymd.uix.screen import MDScreen
+import sys
+from pathlib import Path
 from typing import Any
-from kivymd.uix.toolbar import MDTopAppBar
-from kivy.uix.button import Button
+
 from kivy.clock import Clock
+from kivy.properties import DictProperty, ObjectProperty, StringProperty
+from kivy.uix.button import Button
+from kivymd.uix.screen import MDScreen
+from kivymd.uix.toolbar import MDTopAppBar
 
 ####################################
 #                                  #
@@ -13,10 +16,8 @@ from kivy.clock import Clock
 #                                  #
 ####################################
 
-import sys
-from pathlib import Path
 
-if __name__ == '__main__' and __package__ is None:
+if __name__ == "__main__" and __package__ is None:
     file = Path(__file__).resolve()
     parent, top = file.parent, file.parents[2]
     sys.path.append(str(top))
@@ -24,12 +25,12 @@ if __name__ == '__main__' and __package__ is None:
         sys.path.remove(str(parent))
     except ValueError:
         pass
-    __package__ = '.'.join(parent.parts[len(top.parts):])
+    __package__ = ".".join(parent.parts[len(top.parts) :])
 
-from .calendar_widget import CalendarWidget
-from .popup_save_dialog import SaveDialog
-from .popup_calendar import CalendarEvent
 from ..backend import Client
+from .calendar_widget import CalendarWidget
+from .popup_calendar import CalendarEvent
+from .popup_save_dialog import SaveDialog
 
 ###############
 #             #
@@ -37,19 +38,16 @@ from ..backend import Client
 #             #
 ###############
 
+
 class CalendarView(MDScreen):
     # name of the ical file used for export
-    filename = StringProperty('')
+    filename = StringProperty("")
     # container for calendar events
     events = DictProperty({})
     # reference to the "main" screen
     main_screen = ObjectProperty(None)
 
-    def __init__(
-        self, *, 
-        main_screen:MDScreen, 
-        **kwargs:dict[str,Any]
-    ):
+    def __init__(self, *, main_screen: MDScreen, **kwargs: dict[str, Any]):
         """
         Creates calendar view.
 
@@ -78,7 +76,7 @@ class CalendarView(MDScreen):
         return self.main_screen.use_cache
 
     @use_cache.setter
-    def use_cache(self, value:bool):
+    def use_cache(self, value: bool):
         self.main_screen.use_cache = value
 
     def on_enter(self, *args):
@@ -94,8 +92,18 @@ class CalendarView(MDScreen):
         self.top_bar.title = "Recent & upcoming events"
         # list of temporary top panel entries
         self.to_remove = [
-            ['calendar-export-outline', self.export, 'Export calendar events', 'Export calendar events'],
-            ['calendar-search-outline', self.search, 'Search calendar events', 'Search calendar events']
+            [
+                "calendar-export-outline",
+                self.export,
+                "Export calendar events",
+                "Export calendar events",
+            ],
+            [
+                "calendar-search-outline",
+                self.search,
+                "Search calendar events",
+                "Search calendar events",
+            ],
         ]
         # extend top bar of "main" screen
         for item in self.to_remove:
@@ -113,24 +121,31 @@ class CalendarView(MDScreen):
 
         # remove temporary top panel entries
         for item in self.to_remove:
-            self.top_bar.right_action_items.remove(item)
+            try:
+                self.top_bar.right_action_items.remove(item)
+            except ValueError:
+                pass
         return super().on_leave(*args)
-        
+
     def get_events(self):
         """
         Method collects calendar events via Client interface.
         """
 
         try:
-            self.filename, self.events = self.client.export_calendar(cached=self.use_cache)
+            self.filename, self.events = self.client.export_calendar(
+                cached=self.use_cache
+            )
         except BaseException as ex:
             self.ids.banner.text = [
                 "Failed to import calendar events!",
-                ex.args[0][:1].upper()+ex.args[0][1:]+"."
+                ex.args[0][:1].upper() + ex.args[0][1:] + ".",
             ]
             self.ids.banner.show()
         else:
-            self.ids.table_layout.add_widget(CalendarWidget(events=self.events['parsed']))
+            self.ids.table_layout.add_widget(
+                CalendarWidget(events=self.events["parsed"])
+            )
             self.main_screen.calendar_btn.right_text = f"({len(self.events['parsed'])})"
 
     def refresh(self):
@@ -144,10 +159,9 @@ class CalendarView(MDScreen):
             self.get_events()
             self.use_cache = True
 
-        
         Clock.schedule_once(refresh_callback, 1)
 
-    def export(self, bound_instance:Button):
+    def export(self, bound_instance: Button):
         """
         Method dispatches a save file dialog to save exported calendar events in the ical format.
 
@@ -157,15 +171,15 @@ class CalendarView(MDScreen):
         """
 
         spopup = SaveDialog(
-            content_disposition=self.filename, 
+            content_disposition=self.filename,
             save_method=lambda file, path: self.client.save(
-                file, self.events['ical'], Path(path)
+                file, self.events["ical"], Path(path)
             ),
-            banner=self.ids.banner
+            banner=self.ids.banner,
         )
         spopup.open()
 
-    def search(self, bound_instance:Button):
+    def search(self, bound_instance: Button):
         """
         Method dispatches a dialog displaying filtered calendar events.
 
@@ -175,8 +189,8 @@ class CalendarView(MDScreen):
         """
 
         popup = CalendarEvent(
-            title="Search calendar events", 
+            title="Search calendar events",
             initial_tags=[],
-            events=self.events['parsed']
+            events=self.events["parsed"],
         )
         popup.open()

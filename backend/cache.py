@@ -1,12 +1,14 @@
 # -*- coding: utf-8 -*-
 
 import sqlite3
-import dill as pickle
-from typing import Any
-from datetime import datetime
-from expiringdict import ExpiringDict
-from typing import (TextIO, Optional, Union)
+import sys
 import time
+from datetime import datetime
+from pathlib import Path
+from typing import Any, Optional, TextIO, Union
+
+import dill as pickle
+from expiringdict import ExpiringDict
 
 ####################################
 #                                  #
@@ -14,10 +16,8 @@ import time
 #                                  #
 ####################################
 
-import sys
-from pathlib import Path
 
-if __name__ == '__main__' and __package__ is None:
+if __name__ == "__main__" and __package__ is None:
     file = Path(__file__).resolve()
     parent, top = file.parent, file.parents[1]
     sys.path.append(str(top))
@@ -25,7 +25,7 @@ if __name__ == '__main__' and __package__ is None:
         sys.path.remove(str(parent))
     except ValueError:
         pass
-    __package__ = '.'.join(parent.parts[len(top.parts):])
+    __package__ = ".".join(parent.parts[len(top.parts) :])
 
 from .logger import Logger
 
@@ -35,6 +35,7 @@ from .logger import Logger
 #                  #
 ####################
 
+
 class Cache(ExpiringDict, Logger):
     """
     Abstraction Layer meant to be used as internal time-bound caching system.
@@ -43,10 +44,10 @@ class Cache(ExpiringDict, Logger):
     """
 
     # class attribute defining database name and location
-    destination = ':memory:'
+    destination = ":memory:"
 
     @staticmethod
-    def get_sqlite3_thread_safety(destination:str) -> int:
+    def get_sqlite3_thread_safety(destination: str) -> int:
         """
         Static method used to retrieve correct thread safety level.
         (Further reading: https://www.sqlite.org/threadsafe.html)
@@ -61,50 +62,67 @@ class Cache(ExpiringDict, Logger):
         sqlite_threadsafe2python_dbapi = {0: 0, 2: 1, 1: 3}
         try:
             conn = sqlite3.connect(destination)
-        except:
+        except BaseException:
             # fallback to memory database
-            conn = sqlite3.connect(':memory:')
+            conn = sqlite3.connect(":memory:")
         finally:
-            threadsafety = conn.execute("""
+            threadsafety = conn.execute(
+                """
                 SELECT * FROM PRAGMA_COMPILE_OPTIONS
                 WHERE COMPILE_OPTIONS LIKE 'THREADSAFE=%'
-            """).fetchone()[0]
+            """
+            ).fetchone()[0]
             conn.close()
             return sqlite_threadsafe2python_dbapi[int(threadsafety.split("=")[1])]
 
     def __init__(
-        self, 
-        *streams: tuple[TextIO], 
-        filepath: str, 
-        filename: Optional[str] = 'app.log',
+        self,
+        *streams: tuple[TextIO],
+        filepath: str,
+        filename: Optional[str] = "app.log",
         emit: Optional[bool] = True,
-        verbose: Optional[bool] = False, 
-        max_len:int, 
-        max_age:int, 
-        items: Optional[dict]=None,
-        destination: Optional[str]=None,
+        verbose: Optional[bool] = False,
+        max_len: int,
+        max_age: int,
+        items: Optional[dict] = None,
+        destination: Optional[str] = None,
     ):
         """
-        Create a cache instance. 
+        Create a cache instance.
         Method initilizes Logger and Expiring Dict.
 
         Positional arguments:
-            *args: 
+            *args:
                 Positional argument of Logger class.
 
         Keyword arguments
-            max_age: int, 
+            max_age: int,
                 TTL for records to cache in seconds.
 
             max_len: int,
                 maximum number of records to be held in the cache.
 
-            **kwargs: 
+            items: dict, optional,
+                items to be copied from.
+
+            destination: str,
+                location of the internal database.
+
+            **kwargs:
                 Keyword arguments of Logger class.
 
         """
-        ExpiringDict.__init__(self, max_len=max_len, max_age_seconds=max_age, items=items)
-        Logger.__init__(self, *streams, filepath=filepath, filename=filename, emit=emit, verbose=verbose)
+        ExpiringDict.__init__(
+            self, max_len=max_len, max_age_seconds=max_age, items=items
+        )
+        Logger.__init__(
+            self,
+            *streams,
+            filepath=filepath,
+            filename=filename,
+            emit=emit,
+            verbose=verbose,
+        )
         if destination:
             self.destination = destination
         if Cache.get_sqlite3_thread_safety(self.destination) == 3:
@@ -113,34 +131,37 @@ class Cache(ExpiringDict, Logger):
             check_same_thread = True
         try:
             self.conn = sqlite3.connect(
-                self.destination, 
+                self.destination,
                 # allow multithread application access
                 check_same_thread=check_same_thread,
                 # disable database isolation to enable parallel access
-                isolation_level=None
+                isolation_level=None,
             )
-        except:
-            self.destination = ':memory:'
+        except BaseException:
+            self.destination = ":memory:"
             self.conn = sqlite3.connect(
-                self.destination, 
+                self.destination,
                 check_same_thread=check_same_thread,
-                isolation_level=None
+                isolation_level=None,
             )
         finally:
             self.debug("Caching into: %s" % self.destination)
             cursor = self.conn.cursor()
             # create table object for cached entries
-            cursor.execute("""
+            cursor.execute(
+                """
                 CREATE TABLE IF NOT EXISTS Cached(
                     Key TEXT PRIMARY KEY, 
                     Value BLOB NOT NULL,
                     InsertedAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP NOT NULL
                 );
-            """)
+            """
+            )
             # create trigger to implement automatic expiration of cached records
             # trigger implements both constraints: max_age and max_len
             # trigged by an upsert operation
-            cursor.execute(f"""
+            cursor.execute(
+                f"""
                 CREATE TRIGGER IF NOT EXISTS Cleaner
                 BEFORE INSERT ON Cached
                 BEGIN
@@ -155,34 +176,39 @@ class Cache(ExpiringDict, Logger):
                         LIMIT -1 OFFSET {max_len}
                     );
                 END;
-            """)
+            """
+            )
             # load entries available in cache
             cursor = self.conn.cursor()
-            cursor.execute(f"""
+            cursor.execute(
+                f"""
                 SELECT Key, Value FROM Cached
                 WHERE InsertedAt >= datetime(CURRENT_TIMESTAMP, '-{max_age} seconds');
-            """)
+            """
+            )
             results = cursor.fetchall()
             for result in results:
                 key, value = result
                 # will trigger the SQL trigger automatically
                 self[key] = pickle.loads(bytes.fromhex(value))
 
-    def __getitem__(self, __k:str, __d:Any=None) -> Any:
+    def __getitem__(self, __k: str, __d: Any = None) -> Any:
         """
         Reimplementaion of dict.__getitem__.
         """
 
         # Find record in the SQLite databse
         cursor = self.conn.cursor()
-        cursor.execute(f"""
+        cursor.execute(
+            f"""
             SELECT Value FROM Cached
             WHERE Key='{__k}' AND 
             InsertedAt >= datetime(CURRENT_TIMESTAMP, '-{self.max_age} seconds');
-        """)
+        """
+        )
         result = cursor.fetchone()
-        
-        if result == None:
+
+        if result is None:
             raise KeyError(__k)
 
         # Compare retrieved reference with the internal one
@@ -195,7 +221,7 @@ class Cache(ExpiringDict, Logger):
         self.debug("Retrieved from cache: %s@%d(%s)" % (__k, id(__s), type(__s)))
         return __s
 
-    def __setitem__(self, __k:str, __v:Any, set_time:float=None):
+    def __setitem__(self, __k: str, __v: Any, set_time: float = None):
         """
         Implementation of dict.__setitem__.
         """
@@ -205,7 +231,6 @@ class Cache(ExpiringDict, Logger):
         # Dump into database
         cursor = self.conn.cursor()
         # SQL statement wil trigger SQL trigger
-
         cursor.execute(
             """
             INSERT INTO Cached(Key, Value, InsertedAt)
@@ -216,31 +241,53 @@ class Cache(ExpiringDict, Logger):
                 key=__k,
                 value=pickle.dumps(__v, protocol=pickle.HIGHEST_PROTOCOL).hex(),
                 now=(
-                    datetime.utcnow().strftime('%Y-%m-%d %H:%M:%S') if set_time == None else 
-                    datetime.fromtimestamp(set_time).strftime('%Y-%m-%d %H:%M:%S')
-                )
+                    datetime.utcnow().strftime("%Y-%m-%d %H:%M:%S")
+                    if set_time is None
+                    else datetime.fromtimestamp(set_time).strftime("%Y-%m-%d %H:%M:%S")
+                ),
             )
         )
         self.debug("Cached: %s@%d(%s)" % (__k, id(__v), type(__v)))
 
-    def prolongate(self, key:str, seconds:Union[float,int]):
+    def __delitem__(self, __k: str):
         """
-        Extends the TTL of item by x seconds and resets its timer.
+        Implementation of dict.__delitem__.
+        """
+
+        # Update inner state
+        ExpiringDict.__delitem__(self, __k)
+        cursor = self.conn.cursor()
+        # SQL statement wil trigger SQL trigger
+        cursor.execute(
+            """
+            DELETE FROM Cached
+            WHERE Key = '{key}';
+            """.format(
+                key=__k
+            )
+        )
+        self.debug("Removed: %s" % __k)
+
+    def prolongate(self, key: str, seconds: Union[float, int]):
+        """
+        Moves the creation timestamp of chached record int .
 
         Positional arguments:
             key: str,
                 item id.
-            
+
             seconds: Union[float, int],
-                offset by which the regular TTL (max_age_seconds) will be temporarily extended.
+                offset from now by which creation date will be moved into the future.
         """
 
         __v = self.__getitem__(key)
-        return self.__setitem__(key, __v, set_time=(time.time() + self.max_age + seconds))
+        self.__delitem__(key)
+        return self.__setitem__(key, __v, set_time=(time.time() + seconds))
 
     def __del__(self):
         """
         Tear-down for garbage collector.
         """
-        if hasattr(self, 'conn'):
+
+        if hasattr(self, "conn"):
             self.conn.close()

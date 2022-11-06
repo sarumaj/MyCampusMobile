@@ -1,33 +1,41 @@
 # -*- coding: utf-8 -*-
 
-from kivy.uix.button import Button
-from kivy.properties import (
-    ObjectProperty, NumericProperty, StringProperty, 
-    BooleanProperty, ListProperty, DictProperty
-)
-from kivy.uix.image import AsyncImage
-from kivymd.uix.bottomnavigation import (MDBottomNavigation, MDBottomNavigationItem)
-from kivymd.uix.boxlayout import MDBoxLayout
-from kivymd.uix.expansionpanel import (MDExpansionPanel, MDExpansionPanelTwoLine)
-from kivymd.uix.card import MDCard
-from kivymd.uix.fitimage import FitImage
-from kivymd.uix.screen import MDScreen
-from kivymd.uix.list import (
-    OneLineIconListItem, 
-    IconLeftWidgetWithoutTouch,
-    ThreeLineIconListItem,
-    IRightBodyTouch,
-    ThreeLineAvatarIconListItem
-)
-from kivy.clock import Clock
-from kivymd.uix.bottomsheet import MDCustomBottomSheet
-from kivymd.uix.selectioncontrol import MDCheckbox
+import sys
 from io import BytesIO
+from itertools import cycle
 from pathlib import Path
-import asynckivy
 from typing import Any
-from kivymd.uix.dialog import MDDialog
+
+import asynckivy
+from kivy.clock import Clock
+from kivy.input.motionevent import MotionEvent
+from kivy.properties import (
+    BooleanProperty,
+    DictProperty,
+    ListProperty,
+    NumericProperty,
+    ObjectProperty,
+    StringProperty,
+)
+from kivy.uix.button import Button
+from kivy.uix.image import AsyncImage
 from kivymd.uix.banner import MDBanner
+from kivymd.uix.bottomnavigation import MDBottomNavigation, MDBottomNavigationItem
+from kivymd.uix.bottomsheet import MDCustomBottomSheet
+from kivymd.uix.boxlayout import MDBoxLayout
+from kivymd.uix.card import MDCard
+from kivymd.uix.dialog import MDDialog
+from kivymd.uix.expansionpanel import MDExpansionPanel, MDExpansionPanelTwoLine
+from kivymd.uix.fitimage import FitImage
+from kivymd.uix.list import (
+    IconLeftWidgetWithoutTouch,
+    IRightBodyTouch,
+    OneLineIconListItem,
+    ThreeLineAvatarIconListItem,
+    ThreeLineIconListItem,
+)
+from kivymd.uix.screen import MDScreen
+from kivymd.uix.selectioncontrol import MDCheckbox
 from kivymd.uix.toolbar import MDTopAppBar
 
 ####################################
@@ -36,10 +44,7 @@ from kivymd.uix.toolbar import MDTopAppBar
 #                                  #
 ####################################
 
-import sys
-from pathlib import Path
-
-if __name__ == '__main__' and __package__ is None:
+if __name__ == "__main__" and __package__ is None:
     file = Path(__file__).resolve()
     parent, top = file.parent, file.parents[2]
     sys.path.append(str(top))
@@ -47,18 +52,19 @@ if __name__ == '__main__' and __package__ is None:
         sys.path.remove(str(parent))
     except ValueError:
         pass
-    __package__ = '.'.join(parent.parts[len(top.parts):])
+    __package__ = ".".join(parent.parts[len(top.parts) :])
 
+from ..backend import Client
+from .popup_graph import GraphDialog
 from .popup_progress import ProgressPopup
 from .popup_save_dialog import SaveDialog
-from .popup_graph import GraphDialog
-from ..backend import Client
 
 ###############
 #             #
 # definitions #
 #             #
 ###############
+
 
 class CourseStartRecord(ThreeLineIconListItem):
     """
@@ -73,11 +79,12 @@ class CourseStartRecord(ThreeLineIconListItem):
     parent_widget = ObjectProperty(None)
 
     def __init__(
-        self, *args:tuple[Any],
-        dispatch_context:dict[str,str],
-        screen:MDScreen,
+        self,
+        *args: tuple[Any],
+        dispatch_context: dict[str, str],
+        screen: MDScreen,
         parent_widget,
-        **kwargs:dict[str,Any]
+        **kwargs: dict[str, Any],
     ):
         """
         Creates class instance with necessary references.
@@ -88,7 +95,7 @@ class CourseStartRecord(ThreeLineIconListItem):
 
         Keyword arguments:
             dispatch_context: dict[str,str],
-                keyword arguments required to start given course: 
+                keyword arguments required to start given course:
                 {
                     "enrolmentPeriodId": str,
                     "lectureSeriesId": str,
@@ -130,17 +137,18 @@ class CourseStartRecord(ThreeLineIconListItem):
             self.client.dispatch(**self.dispatch_ctx)
             self.screen.refresh()
             self.banner.text = [
-                'Successfully started new course!',
-                'It might take some time till the change takes the effect though...'
+                "Successfully started new course!",
+                "It might take some time till the change takes the effect though...",
             ]
             self.banner.show()
         except BaseException as ex:
             # send warning as the banner of the "courses" screen
             self.banner.text = [
-                f'Error occured processing the request to start the course!',
-                ex.args[0][:1].upper()+ex.args[0][1:]+"."
+                "Error occured processing the request to start the course!",
+                ex.args[0][:1].upper() + ex.args[0][1:] + ".",
             ]
             self.banner.show()
+
 
 class CourseRegisrationRecordContent(MDBoxLayout):
     """
@@ -149,6 +157,7 @@ class CourseRegisrationRecordContent(MDBoxLayout):
 
     # reference to the parent widget
     parent_widget = ObjectProperty(None)
+
 
 class CourseRegisrationRecord(ThreeLineAvatarIconListItem):
     """
@@ -169,18 +178,19 @@ class CourseRegisrationRecord(ThreeLineAvatarIconListItem):
     bottom_sheet = ObjectProperty(None)
 
     def __init__(
-        self, *, 
-        booking:dict[str,str], 
-        is_enrolled:bool, 
-        bottom_sheet_content:MDCustomBottomSheet, 
-        screen:MDScreen, 
-        **kwargs:dict[str,Any]
+        self,
+        *,
+        booking: dict[str, str],
+        is_enrolled: bool,
+        bottom_sheet_content: MDCustomBottomSheet,
+        screen: MDScreen,
+        **kwargs: dict[str, Any],
     ):
         """
         Creates bookable course record.
 
         Keyword arguments:
-            booking: dict[str,str], 
+            booking: dict[str,str],
                 set of keyword arguments to pass to the client instance for enrollment.
 
             is_enrolled: bool,
@@ -206,7 +216,7 @@ class CourseRegisrationRecord(ThreeLineAvatarIconListItem):
         super().__init__(
             IconLeftWidgetWithoutTouch(icon="book-plus-multiple-outline"),
             self.enroll_checkbox,
-            **kwargs
+            **kwargs,
         )
 
     @property
@@ -230,9 +240,11 @@ class CourseRegisrationRecord(ThreeLineAvatarIconListItem):
             self.enroll_checkbox.on_active(self, True)
             self.enroll_checkbox.active = True
         # open bottom sheet list
-        self.bottom_sheet = MDCustomBottomSheet(screen=self.bottom_sheet_content)
-        self.bottom_sheet.open()
+        if self.enroll_checkbox.is_enrolled:
+            self.bottom_sheet = MDCustomBottomSheet(screen=self.bottom_sheet_content)
+            self.bottom_sheet.open()
         return super().on_release()
+
 
 class CourseEnroll(IRightBodyTouch, MDCheckbox):
     """
@@ -246,9 +258,7 @@ class CourseEnroll(IRightBodyTouch, MDCheckbox):
     asyncloader = ObjectProperty(None)
 
     def __init__(
-        self, *, 
-        parent_widget:ThreeLineAvatarIconListItem, 
-        **kwargs:dict[str,Any]
+        self, *, parent_widget: ThreeLineAvatarIconListItem, **kwargs: dict[str, Any]
     ):
         """
         Creates chekbox widget for the ThreeLineAvatarIconListItem.
@@ -265,7 +275,6 @@ class CourseEnroll(IRightBodyTouch, MDCheckbox):
         MDCheckbox.__init__(self, **kwargs)
         IRightBodyTouch.__init__(self)
 
-    
     @property
     def client(self) -> Client:
         """
@@ -289,7 +298,7 @@ class CourseEnroll(IRightBodyTouch, MDCheckbox):
         return self.parent_widget.is_enrolled
 
     @is_enrolled.setter
-    def is_enrolled(self, value:bool):
+    def is_enrolled(self, value: bool):
         """
         Access point (setter) for the "is_enrolled" property of the parent_widget.
         """
@@ -306,7 +315,7 @@ class CourseEnroll(IRightBodyTouch, MDCheckbox):
 
         return self.parent_widget.screen.ids.banner
 
-    def on_active(self, bound_instance:MDCheckbox, check:bool):
+    def on_active(self, bound_instance: MDCheckbox, check: bool):
         """
         Triggered when checkbox is toggled.
 
@@ -318,7 +327,7 @@ class CourseEnroll(IRightBodyTouch, MDCheckbox):
                 indicates the state of the checbox.
         """
 
-        if self.asyncloader != None and not self.asyncloader.done:
+        if self.asyncloader is not None and not self.asyncloader.done:
             return
 
         async def book():
@@ -326,7 +335,7 @@ class CourseEnroll(IRightBodyTouch, MDCheckbox):
             Asynchronous worker performing the enrollment.
             """
 
-            if check and not self.is_enrolled: 
+            if check and not self.is_enrolled:
                 try:
                     # enroll
                     self.client.enroll(**self.parent_widget.booking_ctx)
@@ -334,8 +343,8 @@ class CourseEnroll(IRightBodyTouch, MDCheckbox):
                 except BaseException as ex:
                     # send warning as the banner of the main screen
                     self.banner.text = [
-                        f'Error occured while enrolling!',
-                        ex.args[0][:1].upper()+ex.args[0][1:]+"."
+                        "Error occured while enrolling!",
+                        ex.args[0][:1].upper() + ex.args[0][1:] + ".",
                     ]
                     self.banner.show()
                     self.active = not check
@@ -347,8 +356,8 @@ class CourseEnroll(IRightBodyTouch, MDCheckbox):
                 except BaseException as ex:
                     # send warning as the banner of the main screen
                     self.banner.text = [
-                        f'Error occured while cancelling enrollment"!',
-                        ex.args[0][:1].upper()+ex.args[0][1:]+"."
+                        "Error occured while cancelling enrollment!",
+                        ex.args[0][:1].upper() + ex.args[0][1:] + ".",
                     ]
                     self.banner.show()
                     self.active = check
@@ -356,6 +365,7 @@ class CourseEnroll(IRightBodyTouch, MDCheckbox):
         # dispatch
         self.asyncloader = asynckivy.start(book())
         return super().on_active(bound_instance, check)
+
 
 class CourseImage(AsyncImage, FitImage):
     """
@@ -365,7 +375,7 @@ class CourseImage(AsyncImage, FitImage):
     # numeric proeprty identifying a course
     course_id = NumericProperty(0)
 
-    def __init__(self, *, course_id:int, **kwargs:dict[str,Any]):
+    def __init__(self, *, course_id: int, **kwargs: dict[str, Any]):
         """
         Create instance of course image loader.
 
@@ -374,13 +384,14 @@ class CourseImage(AsyncImage, FitImage):
                 internal course id.
 
             **kwargs: dict[str,Any],
-                keyword arguments passed to the constructors of 
+                keyword arguments passed to the constructors of
                 kivy.uix.image.AsyncImage and
                 kivymd.uix.fitimage.FitImage.
         """
 
         self.course_id = course_id
         return super().__init__(**kwargs)
+
 
 class CourseResources(MDBoxLayout):
     """
@@ -396,14 +407,15 @@ class CourseResources(MDBoxLayout):
     # place holder for the content of the target file
     content = ObjectProperty(None)
     # data type of the content (MIME)
-    content_disposition = StringProperty('')
+    content_disposition = StringProperty("")
 
     def __init__(
-        self, *, 
-        course_id:int, 
-        screen:MDScreen,
-        resources:dict[str,str],
-        **kwargs:dict[str,Any]
+        self,
+        *,
+        course_id: int,
+        screen: MDScreen,
+        resources: dict[str, str],
+        **kwargs: dict[str, Any],
     ):
         """
         Initializes widget.
@@ -436,10 +448,14 @@ class CourseResources(MDBoxLayout):
         for resource in self.resources:
             # create button instance
             download_btn = OneLineIconListItem(
-                IconLeftWidgetWithoutTouch(icon="download-outline"), 
-                text=resource.get("title")
+                IconLeftWidgetWithoutTouch(icon="download-outline"),
+                text=resource.get("title"),
             )
-            download_btn.bind(on_release=lambda bound_instance: self.download(bound_instance, resource.get('link')))
+            download_btn.bind(
+                on_release=lambda bound_instance: self.download(
+                    bound_instance, resource.get("link")
+                )
+            )
             self.add_widget(download_btn)
 
     @property
@@ -453,10 +469,10 @@ class CourseResources(MDBoxLayout):
     @property
     def banner(self) -> MDBanner:
         return self.screen.ids.banner
-            
-    def download(self, bound_instance:Button, link:str):
+
+    def download(self, bound_instance: Button, link: str):
         """
-        Performs download of given course resource and sipatches a dialog 
+        Performs download of given course resource and sipatches a dialog
         to determine the target location for the downloaded content.
 
         Positional arguments:
@@ -472,7 +488,7 @@ class CourseResources(MDBoxLayout):
         popup = ProgressPopup(title="Downloading...")
         popup.open()
 
-        def perform_download(self, popup:MDDialog):
+        def perform_download(self, popup: MDDialog):
             """
             Worker downloading the content and updating the progress dialog.
 
@@ -486,27 +502,29 @@ class CourseResources(MDBoxLayout):
                 #  download in chunks
                 buff = BytesIO()
                 chunk_size = 1024
-                content_disposition, content_iterator, content_length = self.client.download(
-                    link, cached=self.use_cache, chunk=chunk_size
-                )
+                (
+                    content_disposition,
+                    content_iterator,
+                    content_length,
+                ) = self.client.download(link, cached=self.use_cache, chunk=chunk_size)
                 self.content_disposition = content_disposition
                 popup.total = content_length
                 for i, chunk in enumerate(content_iterator):
                     buff.write(chunk)
                     # update progress bar
-                    popup.prog_val = i*chunk_size
+                    popup.prog_val = i * chunk_size
 
                 # finished
                 popup.status_msg = "Download completed"
                 self.content = buff
-     
+
             except BaseException as ex:
                 # propagate exception
                 popup.exception = ex
 
             finally:
                 popup.dismiss()
-        
+
         # dispatch worker as child thread (coroutine)
         popup.run_worker(perform_download, self, popup)
 
@@ -519,7 +537,7 @@ class CourseResources(MDBoxLayout):
                     interval in seconds denoting the lookup frequency.
             """
 
-            if popup.has_started and popup.exception == None:
+            if popup.has_started and popup.exception is None:
                 # child thread still running...
                 Clock.schedule_once(perfom_switch, dt)
             else:
@@ -527,15 +545,19 @@ class CourseResources(MDBoxLayout):
                 if isinstance(popup.exception, Exception):
                     self.banner.text = [
                         "Download in failed!",
-                        popup.exception.args[0][:1].upper()+popup.exception.args[0][1:]+"."
+                        popup.exception.args[0][:1].upper()
+                        + popup.exception.args[0][1:]
+                        + ".",
                     ]
                     self.banner.show()
                 else:
                     # dispatch save dialog to get location to save the target file
                     spopup = SaveDialog(
-                        content_disposition=self.content_disposition, 
-                        save_method=lambda file, path: self.client.save(file, self.content.getvalue(), Path(path)),
-                        banner=self.banner
+                        content_disposition=self.content_disposition,
+                        save_method=lambda file, path: self.client.save(
+                            file, self.content.getvalue(), Path(path)
+                        ),
+                        banner=self.banner,
                     )
                     spopup.open()
                     bound_instance.disabled = False
@@ -543,28 +565,33 @@ class CourseResources(MDBoxLayout):
         # dispatch watch-dog
         perfom_switch(1)
 
+
 class CoursesExpansionPanel(MDExpansionPanel):
     """
-    Custom expansion panel used to list courses and available course resources 
+    Custom expansion panel used to list courses and available course resources
     as drop down panel list.
     """
+
 
 class CourseCard(MDCard):
     """
     Container for the custom expansion panel.
     """
- 
+
+
 class CoursesBottomNavigation(MDBottomNavigation):
     """
     Tab manager for the course overview used to cluster the courses into categories.
     """
 
-    def on_switch_tabs(self, bottom_navigation_item:MDBottomNavigationItem, name_tab:str):
+    def on_switch_tabs(
+        self, bottom_navigation_item: MDBottomNavigationItem, name_tab: str
+    ):
         """
         Called when switching between tabs.
 
         Positional arguments:
-            bottom_navigation_item: kivymd.uix.bottomnavigation.MDBottomNavigationItem,
+            bottom_navigation_item: MDBottomNavigationItem,
                 instance of navigation item.
 
             name_tab: str,
@@ -579,6 +606,36 @@ class CoursesBottomNavigation(MDBottomNavigation):
         # perform switch
         self.current = name_tab
         return super().on_switch_tabs(bottom_navigation_item, name_tab)
+
+    def on_touch_move(self, touch: MotionEvent):
+        """
+        Switch months pages by touch move.
+
+        Positional arguments:
+            touch: MotionEvent,
+                touch event.
+        """
+
+        nav_items = (
+            (self.ids.bookable_nav_item, "bookable"),
+            (self.ids.inactive_nav_item, "inactive"),
+            (self.ids.active_nav_item, "active"),
+        )
+        to_left = cycle(nav_items)
+        to_right = cycle(reversed(nav_items))
+        # left - previous
+        if touch.dpos[0] < -30:
+            for _, name in to_left:
+                if self.current == name:
+                    self.on_switch_tabs(*next(to_left))
+                    break
+        # right - next
+        elif touch.dpos[0] > 30:
+            for _, name in to_right:
+                if self.current == name:
+                    self.on_switch_tabs(*next(to_right))
+                    break
+
 
 class CourseBrowser(MDScreen):
     """
@@ -597,7 +654,7 @@ class CourseBrowser(MDScreen):
     # to track the content loading routine
     asyncloader = ObjectProperty(None)
 
-    def __init__(self, *, main_screen:MDScreen, **kwargs:dict[str,Any]):
+    def __init__(self, *, main_screen: MDScreen, **kwargs: dict[str, Any]):
         """
         Initialize the screen view.
 
@@ -611,6 +668,16 @@ class CourseBrowser(MDScreen):
 
         self.main_screen = main_screen
         super().__init__(**kwargs)
+
+        def experimental_warning(*args):
+            print(args)
+            self.ids.banner.text = [
+                "Warning!",
+                "This functionality is experimental and provided without warranty!",
+            ]
+            self.ids.banner.show()
+
+        self.ids.bookable_nav_item.bind(on_tab_press=experimental_warning)
         # retrieve courses
         self.get_courses()
 
@@ -627,7 +694,7 @@ class CourseBrowser(MDScreen):
         return self.main_screen.use_cache
 
     @use_cache.setter
-    def use_cache(self, value:bool):
+    def use_cache(self, value: bool):
         self.main_screen.use_cache = value
 
     def init_ui(self):
@@ -651,26 +718,24 @@ class CourseBrowser(MDScreen):
                 )
                 # create course image
                 img = CourseImage(
-                    course_id=course.get('id'), 
-                    source=course.get('img'), 
-                    height=lines.height
+                    course_id=course.get("id"),
+                    source=course.get("img"),
+                    height=lines.height,
                 )
                 # container for the image and expansion panel
                 layout = MDBoxLayout(
-                    orientation='horizontal', 
-                    spacing='10dp', 
+                    orientation="horizontal",
+                    spacing="10dp",
                     adaptive_height=True,
-                    size_hint=(1, None)
+                    size_hint=(1, None),
                 )
                 layout.add_widget(img)
                 # create expansion panel
                 panel = CoursesExpansionPanel(
                     content=CourseResources(
-                        course_id=course.get('id'), 
-                        screen=self, 
-                        resources=resources
+                        course_id=course.get("id"), screen=self, resources=resources
                     ),
-                    panel_cls=lines
+                    panel_cls=lines,
                 )
                 layout.add_widget(panel)
                 # wrap contents inside a card widget
@@ -682,8 +747,12 @@ class CourseBrowser(MDScreen):
                 else:
                     self.ids.inactive_table_layout.add_widget(card)
                 # update badge icons
-                self.ids.active_nav_item.badge_icon = f"numeric-{len(self.ids.active_table_layout.children)}"
-                self.ids.inactive_nav_item.badge_icon = f"numeric-{len(self.ids.inactive_table_layout.children)}"
+                self.ids.active_nav_item.badge_icon = (
+                    f"numeric-{len(self.ids.active_table_layout.children)}"
+                )
+                self.ids.inactive_nav_item.badge_icon = (
+                    f"numeric-{len(self.ids.inactive_table_layout.children)}"
+                )
                 # update the navigation item in the navigation drawer of the "main" screen
                 self.main_screen.courses_btn.right_text = f"({len(self.resources)})"
 
@@ -691,21 +760,28 @@ class CourseBrowser(MDScreen):
             """
             Second asynchrounous worker updating the bookable courses.
             """
+
             if self.bookable:
                 for semester in self.bookable["semesters"]:
                     for subject in sorted(
                         filter(
-                            # retrieve not courses where at least one subject_/lecture is not started yet
-                            lambda x: any([not l["isStarted"] for l in x["lectures"]]) and x["booking"], 
-                            semester["subjects"]
+                            # retrieve not courses where at least one
+                            # subject/lecture is not started yet
+                            lambda x: any(
+                                [not lecture["isStarted"] for lecture in x["lectures"]]
+                            )
+                            and x["booking"],
+                            semester["subjects"],
                         ),
-                        key=lambda x: x["name"]
+                        key=lambda x: x["name"],
                     ):
                         await asynckivy.sleep(0)
                         # container for list items
                         content = CourseRegisrationRecordContent()
                         # fill container with not started subjects/lectures
-                        for lecture in filter(lambda x: not x["isStarted"], subject["lectures"]):
+                        for lecture in filter(
+                            lambda x: not x["isStarted"], subject["lectures"]
+                        ):
                             if lecture.get("dispatching"):
                                 content.ids.container.add_widget(
                                     CourseStartRecord(
@@ -717,31 +793,35 @@ class CourseBrowser(MDScreen):
                                         parent_widget=content,
                                         text=lecture["name"],
                                         secondary_text="(%s)" % lecture["shortname"],
-                                        tertiary_text="%d credits" % lecture["credits"]
+                                        tertiary_text="%d credits" % lecture["credits"],
                                     )
                                 )
                         # add bookable course list record
                         reg_record = CourseRegisrationRecord(
                             text=subject["name"],
                             secondary_text="(%s)" % subject["shortname"],
-                            tertiary_text = semester["cluster"],
+                            tertiary_text=semester["cluster"],
                             is_enrolled=subject["isEnrolled"],
                             booking=subject["booking"],
                             bottom_sheet_content=content,
-                            screen=self
+                            screen=self,
                         )
                         content.parent_widget = reg_record
                         self.ids.bookable_table_layout.add_widget(reg_record)
                 # update badge icon
-                self.ids.bookable_nav_item.badge_icon = f"numeric-{len(self.ids.bookable_table_layout.children)}"
-            
-        # dispatch both coroutines simultanously
-        self.asyncloader = asynckivy.start(
-            asynckivy.and_(
-                set_courses(), 
-                set_bookable_courses()
-            )
-        )
+                self.ids.bookable_nav_item.badge_icon = (
+                    f"numeric-{len(self.ids.bookable_table_layout.children)}"
+                )
+
+        async def all_together():
+            """
+            Dispatch both workers one after another.
+            """
+
+            await set_courses()
+            await set_bookable_courses()
+
+        self.asyncloader = asynckivy.start(all_together())
 
     def refresh(self):
         """
@@ -750,7 +830,7 @@ class CourseBrowser(MDScreen):
 
         def refresh_callback(interval):
             # do nothing if already dispatched
-            if self.asyncloader != None and not self.asyncloader.done:
+            if self.asyncloader is not None and not self.asyncloader.done:
                 return
 
             # clear widgets from tabs
@@ -782,8 +862,18 @@ class CourseBrowser(MDScreen):
 
         # list of temporary top panel entries
         self.to_remove = [
-            ['information-variant', self.show_stats, 'Show available credits', 'Show available credits'],
-            ['graph-outline', self.show_dependencies, 'Draw dependency graph', 'Draw dependency graph']
+            [
+                "information-variant",
+                self.show_stats,
+                "Show available credits",
+                "Show available credits",
+            ],
+            [
+                "graph-outline",
+                self.show_dependencies,
+                "Draw dependency graph",
+                "Draw dependency graph",
+            ],
         ]
         # extend top bar of "main" screen
         for item in self.to_remove:
@@ -791,22 +881,25 @@ class CourseBrowser(MDScreen):
                 self.top_bar.right_action_items.insert(0, item)
         self.top_bar.title = "Course access"
         super().on_enter(*args)
-        
+
     def on_leave(self, *args):
         """
         Called when leaving the screen.
 
         Positional arguments:
             *args: tuple[Any],
-                arguments forwarded to kivymd.uix.screen.MDScreen.on_leave method.
+                arguments forwarded to MDScreen.on_leave method.
         """
 
         # remove temporary top panel entries
         for item in self.to_remove:
-            self.top_bar.right_action_items.remove(item)
+            try:
+                self.top_bar.right_action_items.remove(item)
+            except ValueError:
+                pass
         return super().on_leave(*args)
 
-    def show_dependencies(self, bound_instance:Button):
+    def show_dependencies(self, bound_instance: Button):
         """
         Dispatches a popup dialog displaying the dependency graph.
 
@@ -815,10 +908,12 @@ class CourseBrowser(MDScreen):
                 button bound to the method.
         """
 
-        dialog = GraphDialog(title="Course dependency graph", graph=self.dependencies, screen=self)
+        dialog = GraphDialog(
+            title="Course dependency graph", graph=self.dependencies, screen=self
+        )
         dialog.open()
 
-    def show_stats(self, bound_instance:Button):
+    def show_stats(self, bound_instance: Button):
         """
         Dispatches a banner popup displaying current credits.
 
@@ -829,10 +924,10 @@ class CourseBrowser(MDScreen):
 
         self.ids.banner.text = [
             f"{self.bookable['counts']['booked']:>3} credit points are already booked,",
-            f"{self.bookable['counts']['remaining']:>3} credit points still remaining."
+            f"{self.bookable['counts']['remaining']:>3} credit points still remaining.",
         ]
         self.ids.banner.show()
-        
+
     def get_courses(self):
         """
         Method fetches relevant course data and initualizes the UI.
@@ -842,7 +937,7 @@ class CourseBrowser(MDScreen):
         popup = ProgressPopup(title="Loading...")
         popup.open()
 
-        def perform_load(self, popup:MDDialog):
+        def perform_load(self, popup: MDDialog):
             """
             Worker loading the data and updating the sprogress bar.
 
@@ -856,39 +951,50 @@ class CourseBrowser(MDScreen):
                 resources = list()
                 courses = list(
                     sorted(
-                        self.client.list_courses(cached=self.use_cache), 
-                        key=lambda x: x.get('fullname')
+                        self.client.list_courses(cached=self.use_cache),
+                        key=lambda x: x.get("fullname"),
                     )
                 )
-                
+
                 # collect course resources
                 for idx, course in enumerate(courses):
-                    resources.append([course, self.client.list_course_resources(
-                        course.get('id'), cached=self.use_cache
-                    )])
-                    popup.status_msg = f"Loading resources for the course {course.get('fullname')}..."
-                    popup.prog_val = int(100*(idx+1)/len(courses))
+                    resources.append(
+                        [
+                            course,
+                            self.client.list_course_resources(
+                                course.get("id"), cached=self.use_cache
+                            ),
+                        ]
+                    )
+                    popup.status_msg = (
+                        f"Loading resources for the course {course.get('fullname')}..."
+                    )
+                    popup.prog_val = int(100 * (idx + 1) / len(courses))
 
                 # reset progress bar
                 popup.status_msg = "Obtaining booking information..."
                 popup.prog_val = 0
-                popup.schedule_auto_update(15, .3)
+                popup.schedule_auto_update(15, 0.3)
 
                 # fetch bookable courses
-                self.bookable = self.client.get_courses_to_register(cached=self.use_cache)
+                self.bookable = self.client.get_courses_to_register(
+                    cached=self.use_cache
+                )
                 self.resources = resources
                 popup.status_msg = "Preparing dependency graph..."
-                self.dependencies = self.client.get_dependency_graph(cached=self.use_cache)
+                self.dependencies = self.client.get_dependency_graph(
+                    cached=self.use_cache
+                )
 
                 popup.pro_val = 100
-                
+
             except BaseException as ex:
                 # forward exception
                 popup.exception = ex
 
             finally:
                 popup.dismiss()
-    
+
         # dispatch coroutine as child thread
         popup.run_worker(perform_load, self, popup)
 
@@ -898,10 +1004,11 @@ class CourseBrowser(MDScreen):
 
             Positional arguments:
                 dt: int,
-                    interval in seconds at which the watch-dog performs lookups.
+                    interval in seconds at which the watch-dog performs
+                    lookups.
             """
 
-            if popup.has_started and popup.exception == None:
+            if popup.has_started and popup.exception is None:
                 # worker still running
                 Clock.schedule_once(wait_on_load, dt)
             else:
@@ -910,12 +1017,14 @@ class CourseBrowser(MDScreen):
                     # dispatch banner with warning
                     self.ids.banner.text = [
                         "Failed to load course resources!",
-                        popup.exception.args[0][:1].upper()+popup.exception.args[0][1:]+"."
+                        popup.exception.args[0][:1].upper()
+                        + popup.exception.args[0][1:]
+                        + ".",
                     ]
                     self.ids.banner.show()
                 else:
                     # trigger update of the UI
-                    self.init_ui()
+                    Clock.schedule_once(lambda dt: self.init_ui(), 1)
                     popup.dismiss()
 
         # dispatch watch-dog

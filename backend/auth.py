@@ -1,12 +1,14 @@
 # -*- coding: utf-8 -*-
- 
+
+import re
+import sys
+from functools import partial
+from pathlib import Path
+from typing import Optional, TextIO
+from urllib.parse import urlencode
+
 import requests
 from bs4 import BeautifulSoup
-from urllib.parse import urlencode
-import re
-from typing import TextIO, Optional
-import time
-from expiringdict import ExpiringDict
 
 ####################################
 #                                  #
@@ -14,10 +16,8 @@ from expiringdict import ExpiringDict
 #                                  #
 ####################################
 
-import sys
-from pathlib import Path
 
-if __name__ == '__main__' and __package__ is None:
+if __name__ == "__main__" and __package__ is None:
     file = Path(__file__).resolve()
     parent, top = file.parent, file.parents[1]
     sys.path.append(str(top))
@@ -25,16 +25,17 @@ if __name__ == '__main__' and __package__ is None:
         sys.path.remove(str(parent))
     except ValueError:
         pass
-    __package__ = '.'.join(parent.parts[len(top.parts):])
+    __package__ = ".".join(parent.parts[len(top.parts) :])
 
-from .exceptions import *
 from .cache import Cache
+from .exceptions import ExceptionHandler, SignInFailed, SignOutFailed
 
 ###############
 #             #
 # definitions #
 #             #
 ###############
+
 
 class ContextManager:
     """
@@ -48,14 +49,17 @@ class ContextManager:
         if isinstance(self, Cache):
             try:
                 self.close()
-            except:
+            except BaseException:
                 self.warning("Sign-out failed")
             if exception:
-                self.debug(f'Shutting down gracefully. Reason: {exception.__name__}("{content}")')
+                self.debug(
+                    f'Shutting down gracefully. Reason: {exception.__name__}("{content}")'
+                )
         return True
 
     def close(self):
         """To do: implement in the parent class"""
+
 
 class Authenticator(Cache, ContextManager):
     """
@@ -64,50 +68,94 @@ class Authenticator(Cache, ContextManager):
 
     @property
     def username(self) -> str:
-        return self.__username
+        return self._username
 
     @username.setter
-    def username(self, value:str):
-        self.__username = value
+    def username(self, value: str):
+        self._username = value
         # cache username
-        self['username'] = value
-        self.prolongate('username', 365*24*3600)
+        self["username"] = value
+        self.prolongate("username", 365 * 24 * 3600)
 
     @property
     def password(self) -> str:
         return NotImplementedError
 
     @password.setter
-    def password(self, value:str):
-        self.__password = value
+    def password(self, value: str):
+        self._password = value
 
-    def __init__(self, 
-        username:str, 
-        password:str, 
-        *streams: tuple[TextIO], 
-        filepath: str, 
-        filename: Optional[str] = 'app.log',
+    def __init__(
+        self,
+        username: str,
+        password: str,
+        *streams: tuple[TextIO],
+        filepath: str,
+        filename: Optional[str] = "app.log",
         emit: Optional[bool] = True,
-        verbose: Optional[bool] = False, 
-        max_len:int, 
-        max_age:int, 
-        items: Optional[dict]=None,
-        destination: Optional[str]=None,
+        verbose: Optional[bool] = False,
+        max_len: int,
+        max_age: int,
+        items: Optional[dict] = None,
+        destination: Optional[str] = None,
     ):
         """
         Initliazes internal cache. Can be used as context manager.
+
+        Positional arguments:
+            streams : <see type hint>
+                a tuple of file like objects.
+
+        Keyword arguments:
+            filepath : str or None
+                a Windows or POSIX path string.
+
+            filename : str, optional, default is 'app.log'
+                name of the log file,
+                if None no log file is being created.
+
+            filename : str or None, optional, default is 'app.log'
+                name of a log file, if not None,
+                log file handler is being created.
+
+            emit : bool, optional, default is True
+                if True, DEBUG or INFO and above log
+                level messages will be emitted to 'sys.stdout',
+                ERROR and CRITICAL to 'sys.stderr';
+                emit behavior cannot be disabled if
+                no log file handler has been created.
+
+            verbose: bool, optional, default is False
+                if True, DEBUG log level will be set
+                for both file handler and 'sys.stdout',
+                otherwise INFO log level will be set.
+
+            user: str, optional, default is current logon name
+                username appearing in the logs.
+
+            max_age: int,
+                TTL for records to cache in seconds.
+
+            max_len: int,
+                maximum number of records to be held in the cache.
         """
 
         ContextManager.__init__(self)
         Cache.__init__(
-            self, *streams, 
-            filepath=filepath, filename=filename, emit=emit,
-            verbose=verbose, max_len=max_len, max_age=max_age,
-            items=items, destination=destination
+            self,
+            *streams,
+            filepath=filepath,
+            filename=filename,
+            emit=emit,
+            verbose=verbose,
+            max_len=max_len,
+            max_age=max_age,
+            items=items,
+            destination=destination,
         )
         # start a cookie based session
         self._session = requests.Session()
-              
+
         if username:
             self.username = username
         if password:
@@ -123,87 +171,125 @@ class Authenticator(Cache, ContextManager):
                 )
             )
         """
-
-        self.submit_saml_response(
-            self.get_saml_response(
-                self.get_saml_request()
-            )
-        )
+        self.submit_saml_response(self.get_saml_response(self.get_saml_request()))
         self.debug("Successfully signed in")
 
     @ExceptionHandler("mycamupus.iubh.de was not reachable", SignInFailed)
     def get_saml_request(self) -> str:
+        """
+        Method to fetch saml request.
+
+        Returns:
+            str
+        """
+
         self.debug("Retrieving SAML request")
         # initialize session with response from mycampus
-        response = self._session.get("https://mycampus.iubh.de/my")
-        assert response.status_code == 200, "server responded with %d (%s)" % (response.status_code, response.text)
+        response = partial(self._session.get, "https://mycampus.iubh.de/my")()
+        assert response.status_code == 200, "server responded with %d (%s)" % (
+            response.status_code,
+            response.text,
+        )
         # scrap SAML request for authentication
-        soup = BeautifulSoup(response.text, 'html.parser')
+        soup = BeautifulSoup(response.text, "html.parser")
         SAMLrequest = urlencode(
             {
-                el.get('name'):el.get('value') for el in soup.select('input[type="hidden"]')
+                el.get("name"): el.get("value")
+                for el in soup.select('input[type="hidden"]')
             }
         )
         self.debug("Successfully retrieved SAML request")
         return SAMLrequest
 
-    
     @ExceptionHandler("failed to retrieve SAML response", SignInFailed)
-    def get_saml_response(self, SAMLrequest:str) -> str: 
+    def get_saml_response(self, SAMLrequest: str) -> str:
+        """
+        Method to request SAML response by providing the SAML request challenge.
+
+        Positional arguments:
+            SAMLrequest: str,
+                SAML request challenge object.
+
+        Returns:
+            str
+        """
+
         self.debug("Submitting SAML request")
-        response = self._session.post(
-            "https://login.iubh.de/idp/profile/SAML2/POST/SSO", 
-            headers={'Content-Type': 'application/x-www-form-urlencoded'},
-            data=SAMLrequest
+        response = partial(
+            self._session.post,
+            "https://login.iubh.de/idp/profile/SAML2/POST/SSO",
+            headers={"Content-Type": "application/x-www-form-urlencoded"},
+            data=SAMLrequest,
+        )()
+        assert response.status_code == 200, "server responded with %d (%s)" % (
+            response.status_code,
+            response.text,
         )
-        assert response.status_code == 200, "server responded with %d (%s)" % (response.status_code, response.text)
 
         # scrap hidden login form input fields
-        soup = BeautifulSoup(response.text, 'html.parser')
+        soup = BeautifulSoup(response.text, "html.parser")
         querystring = dict(
             re.findall(
-                '(?:\?|\&)(?:([^&]*?)(?:\=)([^&]*))', 
-                soup.find('form', id='login').get('action')
+                r"(?:\?|\&)(?:([^&]*?)(?:\=)([^&]*))",
+                soup.find("form", id="login").get("action"),
             )
         )
         form = urlencode(
             {
-                'j_username': self.__username,
-                'j_password': self.__password,
-                '_eventId_proceed': '',
+                "j_username": self._username,
+                "j_password": self._password,
+                "_eventId_proceed": "",
                 **{
-                    el.get('name'):el.get('value') for el in soup.select('input[type="hidden"]')
-                }
+                    el.get("name"): el.get("value")
+                    for el in soup.select('input[type="hidden"]')
+                },
             }
         )
         self.debug("Submitting sign-in form")
-        response = self._session.post(
-            "https://login.iubh.de/idp/profile/SAML2/POST/SSO", 
+        response = partial(
+            self._session.post,
+            "https://login.iubh.de/idp/profile/SAML2/POST/SSO",
             params=querystring,
-            headers={'Content-Type': 'application/x-www-form-urlencoded'},
-            data=form
+            headers={"Content-Type": "application/x-www-form-urlencoded"},
+            data=form,
+        )()
+        assert response.status_code == 200, "server responded with %d (%s)" % (
+            response.status_code,
+            response.text,
         )
-        assert response.status_code == 200, "server responded with %d (%s)" % (response.status_code, response.text)
 
         # scrap SAML response
-        soup = BeautifulSoup(response.text, 'html.parser')
+        soup = BeautifulSoup(response.text, "html.parser")
         SAMLresponse = urlencode(
             {
-                el.get('name'):el.get('value') for el in soup.select('input[type="hidden"]')
+                el.get("name"): el.get("value")
+                for el in soup.select('input[type="hidden"]')
             }
         )
         self.debug("Successfully set up SAML response")
         return SAMLresponse
 
     @ExceptionHandler("failed to submit SAML request", SignInFailed)
-    def submit_saml_response(self, SAMLresponse:str):
+    def submit_saml_response(self, SAMLresponse: str):
+        """
+        Method for submitting SAML response.
+
+        Positional arguments:
+            SAMLresponse: str,
+                SAML response challenge object.
+        """
+
         self.debug("Submitting SAML response")
-        response = self._session.post(
-            "https://mycampus.iubh.de/auth/saml2/sp/saml2-acs.php/mycampus.iubh.de", 
-            headers={'Content-Type': 'application/x-www-form-urlencoded'}, 
-            data=SAMLresponse
+        response = partial(
+            self._session.post,
+            "https://mycampus.iubh.de/auth/saml2/sp/saml2-acs.php/mycampus.iubh.de",
+            headers={"Content-Type": "application/x-www-form-urlencoded"},
+            data=SAMLresponse,
+        )()
+        assert response.status_code == 200, "server responded with %d (%s)" % (
+            response.status_code,
+            response.text,
         )
-        assert response.status_code == 200, "server responded with %d (%s)" % (response.status_code, response.text)
         self.debug("Successfully submitted SAML response")
 
     @ExceptionHandler("sign-out request failed", SignOutFailed)
@@ -211,22 +297,38 @@ class Authenticator(Cache, ContextManager):
         """
         Sends sign-out request.
         """
+
         # scrap logout endpoint to submit a sign-out request
         self.debug("Signing out")
-        response = self._session.get("https://mycampus.iubh.de/my/")
-        soup = BeautifulSoup(response.text, 'html.parser')
-        logout = soup.select_one('a[href^="https://mycampus.iubh.de/login/logout.php"]').get('href')
-        response = self._session.get(logout)
-        assert response.status_code == 200, "server responded with %d (%s)" % (response.status_code, response.text)
+        response = partial(self._session.get, "https://mycampus.iubh.de/my/")()
+        soup = BeautifulSoup(response.text, "html.parser")
+        logout = soup.select_one(
+            'a[href^="https://mycampus.iubh.de/login/logout.php"]'
+        ).get("href")
+        response = partial(self._session.get, logout)()
+        assert response.status_code == 200, "server responded with %d (%s)" % (
+            response.status_code,
+            response.text,
+        )
         self.debug("Successfully signed out")
 
-if __name__ == '__main__':
+    def __del__(self):
+        """
+        Tear-down for garbage collector
+        """
+
+        self._session.close()
+        self._loop.close()
+        Cache.__del__(self)
+
+
+if __name__ == "__main__":
     with Authenticator(
-        input('username: '), 
-        input('password: '),
+        input("username: "),
+        input("password: "),
         max_len=100,
         max_age=30,
         filepath=__file__,
-        verbose=True
+        verbose=True,
     ) as handler:
         handler.sign_in()

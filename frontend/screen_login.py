@@ -1,17 +1,20 @@
 # -*- coding: utf-8 -*-
 
-from kivymd.uix.screen import MDScreen
-from kivy.properties import (ObjectProperty, StringProperty)
-from kivy.core.window import Window
-from kivy.clock import Clock
-from kivymd.app import MDApp
-from kivymd.uix.dialog.dialog import MDDialog
-from kivymd.uix.textfield.textfield import MDTextField
-from kivymd.uix.relativelayout import MDRelativeLayout
-from kivymd.uix.button.button import MDRectangleFlatIconButton
-from kivy.uix.behaviors.focus import FocusBehavior
-from typing import Any
 import random
+import sys
+from pathlib import Path
+from typing import Any
+
+from kivy.clock import Clock
+from kivy.core.window import Window
+from kivy.properties import ObjectProperty, StringProperty
+from kivy.uix.behaviors.focus import FocusBehavior
+from kivymd.app import MDApp
+from kivymd.uix.button.button import MDRectangleFlatIconButton
+from kivymd.uix.dialog.dialog import MDDialog
+from kivymd.uix.relativelayout import MDRelativeLayout
+from kivymd.uix.screen import MDScreen
+from kivymd.uix.textfield.textfield import MDTextField
 
 ####################################
 #                                  #
@@ -19,10 +22,8 @@ import random
 #                                  #
 ####################################
 
-import sys
-from pathlib import Path
 
-if __name__ == '__main__' and __package__ is None:
+if __name__ == "__main__" and __package__ is None:
     file = Path(__file__).resolve()
     parent, top = file.parent, file.parents[2]
     sys.path.append(str(top))
@@ -30,7 +31,7 @@ if __name__ == '__main__' and __package__ is None:
         sys.path.remove(str(parent))
     except ValueError:
         pass
-    __package__ = '.'.join(parent.parts[len(top.parts):])
+    __package__ = ".".join(parent.parts[len(top.parts) :])
 
 from .popup_progress import ProgressPopup
 
@@ -40,10 +41,12 @@ from .popup_progress import ProgressPopup
 #             #
 ###############
 
+
 class FocusableButton(MDRectangleFlatIconButton, FocusBehavior):
     """
     Custom button class extending default button behavior.
     """
+
 
 class ClickableTextFieldRound(MDRelativeLayout):
     """
@@ -54,6 +57,7 @@ class ClickableTextFieldRound(MDRelativeLayout):
     text = StringProperty()
     # reference to the hint text of the text input field
     hint_text = StringProperty()
+
 
 class CredentialInput(MDTextField):
     """
@@ -71,9 +75,10 @@ class CredentialInput(MDTextField):
             parameters adhering to the specification of kivy.uix.vkeyboard
 
         """
-        if keycode[0] == 9 and hasattr(self.screen, 'toggle_focus'): # tab
+        if keycode[0] == 9 and hasattr(self.screen, "toggle_focus"):  # tab
             self.screen.toggle_focus()
         return super().keyboard_on_key_down(keyboard, keycode, text, modifiers)
+
 
 class LoginWindow(MDScreen):
     """
@@ -83,17 +88,16 @@ class LoginWindow(MDScreen):
     # observeable app reference
     app = ObjectProperty(None)
 
-    def __init__(self, *, app: MDApp, **kwargs: dict[str,Any]):
+    def __init__(self, *, app: MDApp, **kwargs: dict[str, Any]):
         """
         Create login window.
 
         Keyword arguments:
-            app: kivymd.app.MDApp
+            app: MDApp
                 observable reference of the MDApp instance.
-            
-            **kwargs: dict[str,Any]
-                keyword arguments supported by the parent class kivymd.uix.screen.MDScreen.
 
+            **kwargs: dict[str,Any]
+                keyword arguments supported by the parent class MDScreen.
         """
 
         self.app = app
@@ -101,6 +105,24 @@ class LoginWindow(MDScreen):
         self._keyboard = Window.request_keyboard(self._keyboard_closed, self)
         self._keyboard.bind(on_key_down=self._on_keyboard_down)
         super().__init__(**kwargs)
+
+        def experimental_warning(*args):
+            self.ids.theme_switcher.disabled = True
+            Clock.schedule_once(
+                lambda dt: (
+                    self.ids.banner.hide(),
+                    setattr(self.ids.theme_switcher, "disabled", False),
+                ),
+                self.ids.banner.opening_time + self.ids.banner.closing_time + 5,
+            )
+            self.ids.banner.text = [
+                "Warning!",
+                "The LIGHT theme is provided as is. "
+                "It is recommened to use the DARK theme instead!",
+            ]
+            self.ids.banner.show()
+
+        self.ids.theme_switcher.bind(on_release=experimental_warning)
 
     @property
     def client(self):
@@ -111,8 +133,8 @@ class LoginWindow(MDScreen):
             backend.Client
         """
         return self.app.client
-        
-    def on_enter(self, *args:tuple[Any]):
+
+    def on_enter(self, *args: tuple[Any]):
         """
         Called when entering the screen.
 
@@ -122,7 +144,7 @@ class LoginWindow(MDScreen):
         """
 
         # get username from cache
-        self.ids.username.text = self.app.client.get('username', '')
+        self.ids.username.text = self.app.client.get("username", "")
         # set up initila focus
         if self.ids.username.text:
             self.ids.password.focus = True
@@ -146,9 +168,9 @@ class LoginWindow(MDScreen):
 
         """
 
-        if keycode[0] == 13 and self.ids.sign_in_btn.focus: # enter
+        if keycode[0] == 13 and self.ids.sign_in_btn.focus:  # enter
             self.ids.sign_in_btn.trigger_action()
-        if keycode[0] == 9: # tab
+        if keycode[0] == 9:  # tab
             self.toogle_focus()
         return True
 
@@ -181,7 +203,7 @@ class LoginWindow(MDScreen):
             Worker perfoming sign-in actions and updating the state of the progress popup.
 
             Positional arguments:
-                popup: kivymd.uix.dialog.dialog.MDDialog 
+                popup: kivymd.uix.dialog.dialog.MDDialog
                     custom popup displaying progress of the sign-in procedure.
             """
             try:
@@ -189,7 +211,6 @@ class LoginWindow(MDScreen):
                 popup.status_msg = "Establishing connection..."
                 SAMLrequest = self.client.get_saml_request()
                 popup.prog_val = random.randint(1, 50)
-                
 
                 popup.status_msg = "Exchanging handshake.."
                 SAMLresponse = self.client.get_saml_response(SAMLrequest)
@@ -207,7 +228,7 @@ class LoginWindow(MDScreen):
 
             finally:
                 popup.dismiss()
-        
+
         # run as child thread in background
         popup.run_worker(perform_login, self, popup)
 
@@ -220,7 +241,7 @@ class LoginWindow(MDScreen):
                     interval in seconds denoting the lookup frequency.
             """
 
-            if popup.has_started  and popup.exception == None:
+            if popup.has_started and popup.exception is None:
                 # child thread still running...
                 Clock.schedule_once(perfom_switch, dt)
             else:
@@ -230,8 +251,10 @@ class LoginWindow(MDScreen):
                 if isinstance(popup.exception, Exception):
                     # display warning in a banner
                     self.ids.banner.text = [
-                        popup.exception.args[0][:1].upper()+popup.exception.args[0][1:]+".",
-                        "Check your credentials."
+                        popup.exception.args[0][:1].upper()
+                        + popup.exception.args[0][1:]
+                        + ".",
+                        "Check your credentials.",
                     ]
                     self.ids.banner.show()
                 else:
@@ -240,7 +263,6 @@ class LoginWindow(MDScreen):
 
         # dispatch watch-dog
         perfom_switch(1)
-        
 
     def __del__(self):
         self._keyboard.unbind(on_key_down=self._on_keyboard_down)

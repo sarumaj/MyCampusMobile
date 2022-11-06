@@ -1,7 +1,8 @@
 # -*- coding: utf-8 -*-
 
+import sys
 import unittest
-import tempfile
+from pathlib import Path
 
 ####################################
 #                                  #
@@ -9,10 +10,8 @@ import tempfile
 #                                  #
 ####################################
 
-import sys
-from pathlib import Path
 
-if __name__ == '__main__' and __package__ is None:
+if __name__ == "__main__" and __package__ is None:
     file = Path(__file__).resolve()
     parent, top = file.parent, file.parents[1]
     sys.path.append(str(top))
@@ -20,16 +19,20 @@ if __name__ == '__main__' and __package__ is None:
         sys.path.remove(str(parent))
     except ValueError:
         pass
-    __package__ = '.'.join(parent.parts[len(top.parts):])
+    __package__ = ".".join(parent.parts[len(top.parts) :])
 
-from .exceptions import *
+from .exceptions import ExceptionHandler, RequestFailed, SignInFailed, SignOutFailed
 
-handler = ExceptionHandler({
-    SignInFailed: "SignInFailed has been raised",
-    SignOutFailed: "SignOutFailed has been raised",
-}, RequestFailed)
+handler = ExceptionHandler(
+    {
+        SignInFailed: "SignInFailed has been raised",
+        SignOutFailed: "SignOutFailed has been raised",
+    },
+    RequestFailed,
+)
 
 simple_handler = ExceptionHandler("something has been raised", RequestFailed)
+
 
 class TestObject:
     @handler
@@ -44,6 +47,7 @@ class TestObject:
     def raise_unknown_exception_exception(self):
         raise Exception
 
+
 class ExceptionsTestCase(unittest.TestCase):
     def setUp(self):
         self.test_object = TestObject()
@@ -52,22 +56,23 @@ class ExceptionsTestCase(unittest.TestCase):
         # match exception message by exception type #1
         with self.assertRaises(RequestFailed) as cm:
             self.test_object.raise_sign_in_exception()
-        self.assertEqual(str(cm.exception), 'SignInFailed has been raised')
+        self.assertEqual(str(cm.exception.args[0]), "SignInFailed has been raised")
 
         # match exception message by exception type #2
         with self.assertRaises(RequestFailed) as cm:
             self.test_object.raise_sign_out_exception()
-        self.assertEqual(str(cm.exception), 'SignOutFailed has been raised')
+        self.assertEqual(str(cm.exception.args[0]), "SignOutFailed has been raised")
 
         # do not match exception message by exception type
         with self.assertRaises(RequestFailed) as cm:
             self.test_object.raise_unknown_exception_exception()
-        self.assertEqual(str(cm.exception), 'unknown exception occured')
-        
+        self.assertEqual(str(cm.exception.args[0]), "unknown exception occured")
+
         # handle trivially
         with self.assertRaises(RequestFailed) as cm:
             simple_handler(self.test_object.raise_unknown_exception_exception)(self)
-        self.assertEqual(str(cm.exception), 'something has been raised')
+        self.assertEqual(str(cm.exception.args[0]), "something has been raised")
+
 
 if __name__ == "__main__":
     unittest.main()

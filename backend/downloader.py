@@ -1,12 +1,10 @@
 # -*- coding: utf-8 -*-
 
 import re
+import sys
+from functools import partial
 from pathlib import Path
-from typing import (
-    Union,
-    Optional,
-    Generator
-)
+from typing import Generator, Optional, Union
 
 ####################################
 #                                  #
@@ -14,10 +12,8 @@ from typing import (
 #                                  #
 ####################################
 
-import sys
-from pathlib import Path
 
-if __name__ == '__main__' and __package__ is None:
+if __name__ == "__main__" and __package__ is None:
     file = Path(__file__).resolve()
     parent, top = file.parent, file.parents[1]
     sys.path.append(str(top))
@@ -25,10 +21,10 @@ if __name__ == '__main__' and __package__ is None:
         sys.path.remove(str(parent))
     except ValueError:
         pass
-    __package__ = '.'.join(parent.parts[len(top.parts):])
+    __package__ = ".".join(parent.parts[len(top.parts) :])
 
 from .auth import Authenticator
-from .exceptions import (RequestFailed, ExceptionHandler)
+from .exceptions import ExceptionHandler, RequestFailed
 
 ###############
 #             #
@@ -36,13 +32,20 @@ from .exceptions import (RequestFailed, ExceptionHandler)
 #             #
 ###############
 
+
 class Downloader(Authenticator):
     """
     Implements methods to download course materials.
     """
 
     ExceptionHandler("could not save specified content", RequestFailed)
-    def save(self, filename:str, content:Union[bytes,str], destination:Optional[Path]=None) -> Path:
+
+    def save(
+        self,
+        filename: str,
+        content: Union[bytes, str],
+        destination: Optional[Path] = None,
+    ) -> Path:
         """
         Saves contents into a local file.
 
@@ -61,7 +64,7 @@ class Downloader(Authenticator):
                 path to the file including its name.
         """
 
-        if destination != None and destination.exists():
+        if destination is not None and destination.exists():
             target = destination / filename
         else:
             # default download directory
@@ -71,7 +74,7 @@ class Downloader(Authenticator):
                 downloads_path.mkdir()
             target = downloads_path / filename
         # check if target file exists
-        counter = len(list(target.parent.glob(target.stem + '*')))
+        counter = len(list(target.parent.glob(target.stem + "*")))
         # rename target file to resolve conflict
         if counter > 0:
             while target.exists():
@@ -82,16 +85,15 @@ class Downloader(Authenticator):
         if isinstance(content, bytes):
             target.write_bytes(content)
         else:
-            target.write_text(content, encoding='utf-8')
+            target.write_text(content, encoding="utf-8")
         # return path object
         return target
 
     ExceptionHandler("could not download specified content", RequestFailed)
+
     def download(
-        self, link:str, 
-        cached:Optional[bool]=False, 
-        chunk:Optional[int]=None
-    ) -> tuple[str,Union[bytes,Generator[bytes,None,None]],int]:
+        self, link: str, cached: Optional[bool] = False, chunk: Optional[int] = None
+    ) -> tuple[str, Union[bytes, Generator[bytes, None, None]], int]:
         """
         Sends HTTP request to fetch target file.
 
@@ -113,30 +115,38 @@ class Downloader(Authenticator):
                     content-lenght.
         """
 
-        if cached and self.get(f'{self.username}.{link}') != None and chunk == None:
-            return self[f'{self.username}.{link}']
+        if all(
+            (
+                cached and self.get(f"{self.username}.{link}") is not None,
+                chunk is None,
+            )
+        ):
+            return self[f"{self.username}.{link}"]
 
         self.debug(f"Requesting document from {link}")
 
-        response = self._session.get(link)
-        assert response.status_code == 200, "server responded with %d (%s)" % (response.status_code, response.text)
+        response = partial(self._session.get, link)()
+        assert response.status_code == 200, "server responded with %d (%s)" % (
+            response.status_code,
+            response.text,
+        )
 
         try:
             content_disposition = re.search(
-                'filename\=\"(.*)\"', 
-                response.headers['Content-Disposition']
+                r'filename\="(.*)"', response.headers["Content-Disposition"]
             ).group(1)
-        except:
-            content_disposition = 'unknown'
+        except BaseException:
+            content_disposition = "unknown"
 
         content_length = int(response.headers["Content-Length"])
 
         self.debug("Successfully downloaded content")
-        if chunk == None:
+        if chunk is None:
             result = (content_disposition, response.content, content_length)
-            self[f'{self.username}.{link}'] = result
+            self[f"{self.username}.{link}"] = result
             return result
-        return (content_disposition, response.iter_content(chunk_size=chunk), content_length)
-
-        
-        
+        return (
+            content_disposition,
+            response.iter_content(chunk_size=chunk),
+            content_length,
+        )
