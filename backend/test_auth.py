@@ -52,7 +52,11 @@ class CacheTestCase(unittest.TestCase):
         )
 
     @patch("__main__.AUTHENTICATOR._session")
-    def test_get_saml_response(self, session_mock):
+    @patch("__main__.AUTHENTICATOR.get_saml_request")
+    def test_get_saml_response(self, get_saml_request, session_mock):
+        get_saml_request.return_value = MockDumper.read(
+            "Authenticator.get_saml_request.SAMLrequest#1.dump"
+        )
         session_mock.post.side_effect = (
             MagicMock(
                 status_code=200,
@@ -68,14 +72,17 @@ class CacheTestCase(unittest.TestCase):
             ),
         )
         self.assertEqual(
-            self.auth.get_saml_response(
-                MockDumper.read("Authenticator.get_saml_request.SAMLrequest#1.dump")
-            ),
+            self.auth.get_saml_response(self.auth.get_saml_request()),
             MockDumper.read("Authenticator.get_saml_response.SAMLresponse#1.dump"),
         )
+        get_saml_request.assert_called_with()
 
     @patch("__main__.AUTHENTICATOR._session")
-    def test_submit_saml_response(self, session_mock):
+    @patch("__main__.AUTHENTICATOR.get_saml_response")
+    def test_submit_saml_response(self, get_saml_response, session_mock):
+        get_saml_response.return_value = MockDumper.read(
+            "Authenticator.get_saml_response.SAMLresponse#1.dump"
+        )
         session_mock.post.return_value = MagicMock(
             status_code=200,
             text=MockDumper.read(
@@ -83,11 +90,10 @@ class CacheTestCase(unittest.TestCase):
             ),
         )
         self.assertEqual(
-            self.auth.submit_saml_response(
-                MockDumper.read("Authenticator.get_saml_response.SAMLresponse#1.dump")
-            ),
+            self.auth.submit_saml_response(self.auth.get_saml_response("SAML request")),
             None,
         )
+        get_saml_response.assert_called_with("SAML request")
 
     @patch("__main__.AUTHENTICATOR._session")
     def test_sign_out(self, session_mock):
