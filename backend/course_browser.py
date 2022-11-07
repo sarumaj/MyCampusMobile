@@ -2,8 +2,8 @@
 
 import re
 import sys
-from functools import partial
 from pathlib import Path
+from urllib.parse import urlencode
 
 import networkx as nx
 from bs4 import BeautifulSoup
@@ -66,7 +66,7 @@ class CourseBrowser(Authenticator):
             return self[f"{self.username}.courses"]
 
         self.debug("Requesting course list")
-        response = partial(self._session.get, "https://mycampus.iubh.de/my/")()
+        response = self._session.get("https://mycampus.iubh.de/my/")
         soup = BeautifulSoup(response.text, "html.parser")
         result = [
             {
@@ -121,11 +121,9 @@ class CourseBrowser(Authenticator):
 
         self.debug(f"Requesting course view for {course_id}")
 
-        response = partial(
-            self._session.get,
-            "https://mycampus.iubh.de/course/view.php",
-            params={"id": course_id},
-        )()
+        response = self._session.get(
+            "https://mycampus.iubh.de/course/view.php", params={"id": course_id}
+        )
         assert response.status_code == 200, "server responded with %d (%s)" % (
             response.status_code,
             response.text,
@@ -170,8 +168,7 @@ class CourseBrowser(Authenticator):
         """
 
         self.debug(f"Sending enroll request for curriculum entry: {curriculumEntryId}")
-        response = partial(
-            self._session.post,
+        response = self._session.post(
             "https://care-fs.iubh.de/ajax/4713/CourseInscriptionCurricular/DefaultController/BookCourse",
             params={
                 "enrolmentPeriodId": enrolmentPeriodId,
@@ -182,7 +179,7 @@ class CourseBrowser(Authenticator):
             },
             data={},
             headers={"Content-Type": "application/x-www-form-urlencoded"},
-        )()
+        )
         assert response.status_code == 200, "server responded with %d (%s)" % (
             response.status_code,
             response.text,
@@ -207,8 +204,7 @@ class CourseBrowser(Authenticator):
         """
 
         self.debug(f"Canceling enrollment for curriculum entry: {curriculumEntryId}")
-        response = partial(
-            self._session.post,
+        response = self._session.post(
             "https://care-fs.iubh.de/ajax/4713/CourseInscriptionCurricular/DefaultController/CancelBooking",
             params={
                 "enrolmentPeriodId": enrolmentPeriodId,
@@ -219,7 +215,7 @@ class CourseBrowser(Authenticator):
             },
             data={},
             headers={"Content-Type": "application/x-www-form-urlencoded"},
-        )()
+        )
         assert response.status_code == 200, (
             "server responded with %d" % response.status_code
         )
@@ -243,8 +239,7 @@ class CourseBrowser(Authenticator):
         """
 
         self.debug(f"Sending request to begin curriculum entry: {curriculumEntryId}")
-        response = partial(
-            self._session.post,
+        response = self._session.post(
             "https://care-fs.iubh.de/ajax/4713/CourseInscriptionCurricular/DefaultController/BookCourse",
             params={
                 "enrolmentPeriodId": enrolmentPeriodId,
@@ -255,7 +250,7 @@ class CourseBrowser(Authenticator):
             },
             data={},
             headers={"Content-Type": "application/x-www-form-urlencoded"},
-        )()
+        )
         assert response.status_code == 200, "server responded with %d (%s)" % (
             response.status_code,
             response.text,
@@ -273,11 +268,11 @@ class CourseBrowser(Authenticator):
         """
 
         self.debug("Retrieving booking id")
+
         # get course registration context
-        response = partial(
-            self._session.get,
+        response = self._session.get(
             "https://mycampus.iubh.de/local/iubh_ac5sso/ac5kursbuchung.php",
-        )()
+        )
         assert response.status_code == 200, "server responded with %d (%s)" % (
             response.status_code,
             response.text,
@@ -289,22 +284,38 @@ class CourseBrowser(Authenticator):
                 + re.escape("https://care-fs.iubh.de/img/mycsso/set.php")
                 + '.*?)(?=")'
             )
-            response = partial(
-                self._session.get, re.search(regex, response.text).group(1)
-            )()
-        except BaseException:
-            self.warning("failed to set context for booking id")
-        finally:
+            if regex.search(response.text):
+                self._session.get(regex.search(response.text).group(1))
+            else:
+                self._session.post(
+                    "https://care-fs.iubh.de/",
+                    params={
+                        "loginReferrer": "/en/study/curricular-course-registration.php"
+                    },
+                    headers={"Content-Type": "application/x-www-form-urlencoded"},
+                    data=urlencode(
+                        {
+                            "login-form": "login-form",
+                            "user": self._username,
+                            "password": self._password,
+                            "login-referer": "/en/study/curricular-course-registration.php",
+                        }
+                    ),
+                )
             # retrieve booking id
-            response = partial(
-                self._session.get,
-                "https://care-fs.iubh.de/en/study/curricular-course-registration.php",
-            )()
+            response = self._session.get(
+                "https://care-fs.iubh.de/en/study/curricular-course-registration.php"
+            )
             regex = re.compile(
                 r'\{"id":"(\d+)","classId":"\d+",'
                 r'"studyProgramId":"\d+","focusIds":\[.*\]\}'
             )
             booking_id = regex.search(response.text).group(1)
+        except BaseException:
+            self.warning(
+                "failed to set context for booking id",
+            )
+        else:
             self[f"{self.username}.booking_id"] = booking_id
             self.debug(f"Retrieved booking id: {booking_id}")
             return booking_id
@@ -327,11 +338,10 @@ class CourseBrowser(Authenticator):
             self.get_booking_id()
 
         self.debug("Requesting graded curriculum entries")
-        response = partial(
-            self._session.get,
+        response = self._session.get(
             "https://care-fs.iubh.de/ajax/4713/CourseInscriptionCurricular/DefaultController/fetchCurriculumGrades",
             params={"bookindId": self.get(f"{self.username}.booking_id")},
-        )()
+        )
         assert response.status_code == 200, "server responded with %d (%s)" % (
             response.status_code,
             response.text,
@@ -383,11 +393,10 @@ class CourseBrowser(Authenticator):
             self.get_booking_id()
 
         self.debug("Requesting curriculum entries")
-        response = partial(
-            self._session.get,
+        response = self._session.get(
             "https://care-fs.iubh.de/ajax/4713/CourseInscriptionCurricular/DefaultController/fetchCurriculumEntry",
             params={"bookindId": self.get(f"{self.username}.booking_id")},
-        )()
+        )
         assert response.status_code == 200, "server responded with %d (%s)" % (
             response.status_code,
             response.text,
@@ -464,11 +473,10 @@ class CourseBrowser(Authenticator):
         if not self.get(f"{self.username}.booking_id"):
             self.get_booking_id()
 
-        response = partial(
-            self._session.get,
+        response = self._session.get(
             "https://care-fs.iubh.de/ajax/4713/CourseInscriptionCurricular/DefaultController/fetchCurriculumEntry",
             params={"bookindId": self.get(f"{self.username}.booking_id")},
-        )()
+        )
         assert response.status_code == 200, "server responded with %d (%s)" % (
             response.status_code,
             response.text,
@@ -577,11 +585,10 @@ class CourseBrowser(Authenticator):
             self.get_booking_id()
 
         self.debug("Retrieving lecture series")
-        response = partial(
-            self._session.get,
+        response = self._session.get(
             "https://care-fs.iubh.de/ajax/4713/CourseInscriptionCurricular/DefaultController/fetchCourses",
             params={"bookindId": self.get(f"{self.username}.booking_id")},
-        )()
+        )
         assert response.status_code == 200, "server responded with %d (%s)" % (
             response.status_code,
             response.text,
@@ -675,11 +682,10 @@ class CourseBrowser(Authenticator):
 
         self.debug("Retrieving enrolled curriculum entries")
         # get enrolled courses
-        response = partial(
-            self._session.get,
+        response = self._session.get(
             "https://care-fs.iubh.de/ajax/4713/CourseInscriptionCurricular/DefaultController/fetchCourseTickets",
             params={"bookindId": self.get(f"{self.username}.booking_id")},
-        )()
+        )
         assert response.status_code == 200, "server responded with %d (%s)" % (
             response.status_code,
             response.text,
@@ -722,11 +728,10 @@ class CourseBrowser(Authenticator):
             self.get_booking_id()
 
         self.debug("Retrieving available credits")
-        response = partial(
-            self._session.get,
+        response = self._session.get(
             "https://care-fs.iubh.de/ajax/4713/CourseInscriptionCurricular/DefaultController/fetchCreditCounts",
             params={"bookindId": self.get(f"{self.username}.booking_id")},
-        )()
+        )
         assert response.status_code == 200, "server responded with %d (%s)" % (
             response.status_code,
             response.text,

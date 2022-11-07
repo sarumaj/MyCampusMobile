@@ -2,7 +2,6 @@
 
 import re
 import sys
-from functools import partial
 from pathlib import Path
 
 from bs4 import BeautifulSoup
@@ -73,10 +72,9 @@ class GradesReporter(Authenticator):
 
         # call PHP endpoint
         self.debug("Requesting legend object")
-        response = partial(
-            self._session.get,
-            "https://mycampus.iubh.de/local/iubh_ac5sso/ac5notenuebersicht.php",
-        )()
+        response = self._session.get(
+            "https://mycampus.iubh.de/local/iubh_ac5sso/ac5notenuebersicht.php"
+        )
         assert response.status_code == 200, "server responded with %d (%s)" % (
             response.status_code,
             response.text,
@@ -84,7 +82,7 @@ class GradesReporter(Authenticator):
         soup = BeautifulSoup(response.text, "html.parser")
         # load iframe content
         url = soup.select_one("iframe", id="ac5frame").get("src")
-        response = partial(self._session.get, url)()
+        response = self._session.get(url)
         assert response.status_code == 200, "server responded with %d (%s)" % (
             response.status_code,
             response.text,
@@ -92,10 +90,9 @@ class GradesReporter(Authenticator):
         self.debug("Successfully retrieved legend object")
 
         self.debug("Requesting grades table object")
-        response = partial(
-            self._session.get,
-            "https://care-fs.iubh.de/en/examinations/examination-results.php",
-        )()
+        response = self._session.get(
+            "https://care-fs.iubh.de/en/examinations/examination-results.php"
+        )
         assert response.status_code == 200, "server responded with %d (%s)" % (
             response.status_code,
             response.text,

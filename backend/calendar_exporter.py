@@ -2,7 +2,6 @@
 
 import sys
 from enum import Enum
-from functools import partial
 from pathlib import Path
 from typing import Any
 from urllib.parse import urlencode
@@ -107,9 +106,7 @@ class CalendarExporter(Authenticator):
 
         # send HTTP request to PHP endpoint
         self.debug("Requesting calendar export context")
-        response = partial(
-            self._session.get, "https://mycampus.iubh.de/calendar/export.php"
-        )()
+        response = self._session.get("https://mycampus.iubh.de/calendar/export.php")
         assert response.status_code == 200, "server responded with %d (%s)" % (
             response.status_code,
             response.text,
@@ -157,12 +154,11 @@ class CalendarExporter(Authenticator):
         )
 
         self.debug("Exporting calendar events")
-        response = partial(
-            self._session.post,
+        response = self._session.post(
             "https://mycampus.iubh.de/calendar/export.php",
             headers={"Content-Type": "application/x-www-form-urlencoded"},
             data=form,
-        )()
+        )
         assert response.status_code == 200, "server responded with %d (%s)" % (
             response.status_code,
             response.text,

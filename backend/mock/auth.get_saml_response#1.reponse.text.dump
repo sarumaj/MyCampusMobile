@@ -1,0 +1,225 @@
+
+<!DOCTYPE html>
+<html dir="ltr" lang="en" xml:lang="en">
+<head>
+    <title>mycampus.iubh.de: Login into IU MyCampus</title>
+    <link rel="icon" href="/idp/images/favicon.ico"/>
+    <meta name="keywords" content="moodle, IU MyCampus, Login, Virtueller Campus, Online Campus"/>
+    <link rel="stylesheet" media="only screen and (min-width: 601px)" type="text/css" href="/idp/css/all.css"/>
+    <link rel="stylesheet" media="only screen and (max-width: 600px)" type="text/css" href="/idp/css/mobile.css"/>
+    <!-- CSS print media -->
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <!-- Twitter Card data -->
+    <meta name="twitter:card" value="summary">
+    <meta name="twitter:site" value="IU MyCampus"/>
+    <meta name="twitter:title" value="IU MyCampus: Login into MyCampus"/>
+    <!-- Open Graph data -->
+    <meta property="og:locale" content="de_DE" />
+    <meta property="og:title" content="IU MyCampus: Login into MyCampus"/>
+    <meta property="og:description" content="IU MyCampus: Der virtuelle Campus für Studierende für selbstbestimmtes Lernen" />
+    <meta property="og:site_name" content="IU MyCampus: Der virtuelle Campus für Studierende für selbstbestimmtes Lernen" />
+    <meta property="og:type" content="website"/>
+    <meta property="og:url" content=""/>
+    <meta name="og:site_name" value="IU MyCampus"/>
+    <!-- Chrome, Firefox OS and Opera on Android topbar color -->
+    <meta name="theme-color" content="#3A454b"/>
+    <!-- Windows Phone topbar color -->
+    <meta name="msapplication-navbutton-color" content="#3A454b"/>
+    <!-- iOS Safari topbar color -->
+    <meta name="apple-mobile-web-app-status-bar-style" content="#3A454b"/>
+    <link rel="stylesheet" href="/idp/css/font-awesome.min.css">
+    <link href="/idp/fonts/openSans.css" rel="stylesheet" type="text/css">
+    <link href="/idp/fonts/roboto.css" rel="stylesheet" type="text/css">
+    <link href="/idp/fonts/robotoCondensed.css" rel="stylesheet" type="text/css">
+</head>
+<body id="page-login-index"class="format-site  path-login chrome dir-ltr lang-en yui-skin-sam yui3-skin-sam stage2-mycampus-iubh-de pagelayout-login course-1 context-1 notloggedin two-column">
+<div>
+    <a class="sr-only sr-only-focusable" href="#maincontent">Skip to main content</a>
+</div>
+<script src="/idp/js/theme_iu_fresh/pace-min.js"></script>
+<script src="/idp/js/theme_iu_fresh/jquery-flexslider-min.js"></script>
+<script src="/idp/js/theme_iu_fresh/tickerme.js"></script>
+<script src="/idp/js/theme_iu_fresh/jquery-easing-min.js"></script>
+<script src="/idp/js/theme_iu_fresh/iu_fresh_v2_1_1_2.js"></script>
+
+
+<div id="page-wrapper">
+    <div id="page" class="container-fluid fullin standard">
+        <div id="loginpage" class="container outercont"><span class="notifications row" id="user-notifications"></span>
+            <div id="page-content" class="row">
+                <section id="region-main" class="col-12">
+                    <div class="frame border-black">
+                        <div class="card-box">
+                            <h4 class="bg-red">&nbsp;</h4>
+                            <h3 class="bg-orange">&nbsp;</h3>
+                            <h2 class="bg-green">&nbsp;</h2>
+                            <h1 class="bg-black">&nbsp;&nbsp;&nbsp;Willkommen</h1>
+                        </div>
+                    </div>
+                    <div class="col-sm-12 ">
+                        <div class="card">
+                            <div class="card-block">
+                                <div role="main"><span id="maincontent"></span>
+                                    <div class="row">
+                                        <div class="spacer-sm-2"></div>
+                                        <div class="spacer-sm-4 ">
+                                            <div class="card">
+                                                <div class="card-block">
+                                                    <div class="justify-content-md-center">
+                                                        <div class="col-md-12 dienst maincenter">
+                                                            <div class="space"></div>
+                                                            <!-- Neue Aenderungen -->
+                                                            <h1 class="card-header">myCampus</h1>              
+                                                            <div class="space"></div>
+                                                        </div>
+                                                        <!-- END Neue Aenderungen -->
+                                                    </div>
+
+                                                    <div class="card-body">
+                                                        <!--<div> Sie sind dabei auf diesen Dienst zuzugreifen:<br>
+                                                           <strong>mycampus.iubh.de</strong>
+                                                        </div>-->
+
+                                                        <div class="row justify-content-md-center">
+                                                            <div class="col-md-12">
+
+                                                                <form class="" action="/idp/profile/SAML2/POST/SSO?execution=e1s1" method="post"
+                                                                      id="login">
+                                                                    <input id="anchor" type="hidden" name="anchor" value="">
+                                                                    <script>document.getElementById('anchor').value = location.hash;</script>
+                                                                    <input type="hidden" name="logintoken"
+                                                                           value="xPmvEmRnswfkFSBriX11mumHXDY7Q2Hw">
+                                                                           <div class="form-input">
+                                                                    <div class="form-group">
+                                                                        <label for="username" class="sr-only">Benutzername</label>
+                                                                        <i class="icon fa fa-user-o fa-fw"></i>
+                                                                        <input type="text" id="username" name="j_username" class="form-control" value="" placeholder="Benutzername">
+                                                                    </div>
+                                                                    <div class="form-group">
+                                                                        <label for="password" class="sr-only">Passwort</label>
+                                                                        <i class="icon fa fa-key fa-fw"></i>
+                                                                        <input type="password" id="password" name="j_password" class="form-control" value="" placeholder="Passwort">
+                                                                    </div>
+                                                                    </div>
+                                                              <!--      <div id="helpbuttons">
+                                                                        <div class="rememberpass small">
+                                                                            <input type="checkbox" name="rememberusername" id="rememberusername" value="1">
+                                                                            <label for="rememberusername">Anmeldenamen merken</label>
+                                                                            <div class="cookiesenabled">
+                                                                                <a class="btn btn-link p-0"
+                                                                                   role="button"
+                                                                                   data-container="body"
+                                                                                   data-toggle="popover"
+                                                                                   data-placement="right"
+                                                                                   data-content="&lt;div class=&quot;no-overflow&quot;&gt;&lt;p&gt;Two cookies are used on this site:&lt;/p&gt;
+
+&lt;p&gt;The essential one is the session cookie, usually called MoodleSession. You must allow this cookie in your browser to provide continuity and to remain logged in when browsing the site. When you log out or close the browser, this cookie is destroyed (in your browser and on the server).&lt;/p&gt;
+
+&lt;p&gt;The other cookie is purely for convenience, usually called MOODLEID or similar. It just remembers your username in the browser. This means that when you return to this site, the username field on the login page is already filled in for you. It is safe to refuse this cookie - you will just have to retype your username each time you log in.&lt;/p&gt;
+&lt;/div&gt; "
+                                                                                   data-html="true" tabindex="0"
+                                                                                   data-trigger="focus">
+                                                                                    <i class="icon fa fa-question-circle text-info fa-fw "
+                                                                                       title="Help with Cookies must be enabled in your browser"
+                                                                                       aria-label="Help with Cookies must be enabled in your browser"></i>
+                                                                                </a>
+                                                                            </div>
+                                                                        </div> --!>
+                                                                        <div class="forgetpass small">
+                                                                            <p><a class="pass" href="https://identity.iubh.de/service/public/forgottenpassword">Passwort vergessen?</a></p>
+                                                                        </div>
+                                                                    </div>
+                                                                    <button type="submit"
+                                                                            class="btn btn-block btn-login"
+                                                                            id="loginbtn" name="_eventId_proceed"
+                                                                            onClick="this.childNodes[0].nodeValue='Anmeldung läuft, bitte warten...'">
+                                                                    <span class="login">Anmelden</span>
+                                                                    </button>
+                                                                </form>
+
+                                                                <div id="iulogo_container">
+                                                                    <div class="left">
+                                                                        <div id="iulogo">iu</div>
+
+                                                                        <div id="iuname">INTERNATIONALE<br>HOCHSCHULE
+                                                                        </div>
+                                                                    </div>
+                                                                    <div class="right">
+                                                                        <div id="sprache"><a
+                                                                                href="&#x2f;idp&#x2f;profile&#x2f;SAML2&#x2f;POST&#x2f;SSO&#x3f;execution&#x3d;e1s1&amp;lang&#x3d;de"
+                                                                                class="active" target="_self"
+                                                                                title="Diese Seite ist bereits auf Deutsch">DE</a>
+                                                                            |
+                                                                            <a href="&#x2f;idp&#x2f;profile&#x2f;SAML2&#x2f;POST&#x2f;SSO&#x3f;execution&#x3d;e1s1&amp;lang&#x3d;en"
+                                                                               class="" target="_self"
+                                                                               title="Diese Seite auf English">EN</a>
+                                                                        </div>
+
+                                                                    </div>
+
+                                                                </div>
+                                                            </div>
+
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        <div class="spacer-sm-6"></div>
+                                    </div>
+                                    <style>#nav-drawer a[data-key="mymedia"] {
+                                        display: none;
+                                    }</style>
+                                    <style>#nav-drawer a[data-key="kalturacoursegallerylink-allcourses"] {
+                                        display: none;
+                                    }</style>
+                                    <style>#nav-drawer a[data-key="kalturacoursegallerylink-mycourses"] {
+                                        display: none;
+                                    }</style>
+                                </div>
+                            </div>
+                        </div>
+                </section>
+            </div>
+        </div>
+
+        <footer id="page-footer" class="d-block">
+            <div class="container footer">
+                <div id="course-footer"></div>
+                <div class="container blockplace1"></div>
+                <div class="info container2 clearfix">
+                    <div class="container">
+                        <div class="row">
+                            <div class="col-md-4 my-md-0 my-2 imprint">
+                                <div class="tool_usertours-resettourcontainer"></div>
+
+                                  <a class="impressum" href="/policy/impressum_de.pdf">Impressum</a>
+                                  &nbsp;&nbsp;&nbsp;
+                                  <a class="data" href="/policy/privacy_policy_de.pdf">Datenschutzerklärung</a>
+                                  &nbsp;&nbsp;&nbsp;
+                                  <a class="mitarbeiter" href="https://mycampus.iubh.de/login/index.php?saml=off">Login für IU Mitarbeiter</a>
+                                <br><span class='copyright'>Copyright &copy; 2021 IU Internationale Hochschule - All rights reserved</span>
+                            </div>
+                            <div class="col-md-4 my-md-0 my-2 standardfooter">
+                            </div>
+                            <div class="col-md-4 my-md-0 my-2 socialicons">
+                                <div class="pagination-centered socialicons">
+                                    <a target="_blank" title="Facebook" href="https://www.facebook.com/iu.fernstudium/"><i
+                                            class="fa fa-facebook-square
+"></i></a><a target="_blank" title="Instagram" href="https://www.instagram.com/iu.fernstudium/"><i class="fa fa-instagram
+"></i></a><a target="_blank" title="Youtube" href="https://www.youtube.com/channel/UCqdnNeIEP6LvFWEcwI9We4w/"><i class="fa fa-youtube-play
+"></i></a><a target="_blank" title="LinkedIn" href="https://www.linkedin.com/showcase/iufernstudium/"><i class="fa fa-linkedin-square
+"></i></a><a target="_blank" title="Twitter" href="https://twitter.com/iufernstudium/"><i class="fa fa-twitter-square
+"></i></a><a target="_blank" title="TikTok" href="https://www.tiktok.com/@iu.fernstudium"><i
+                                        class="fa fa-brands:tiktok"></i></a></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </footer>
+
+        <div id="back-to-top"><i class="fa fa-arrow-up "></i> move up</div>
+
+</body>
+
+</html>

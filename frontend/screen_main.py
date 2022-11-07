@@ -312,7 +312,6 @@ class MainScreenWithTopPanel(MDScreen):
             # dispatch content loaders (order matters!)
             for screen in ("calendar", "grades", "courses"):
                 await load_screen(screen, True)
-            await load_screen("courses", False)
             # switch over
             await switch()
 

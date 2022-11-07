@@ -113,7 +113,7 @@ class MobileApp(MDApp):
             MDScreenManager
         """
         self.title = "MyCampus Mobile"
-        self.icon = "dark.png"
+        self.icon = "icon.png"
 
         self.sm = WindowManager(transition=SlideTransition())
         # using monkey patching to extend properties of the client instance

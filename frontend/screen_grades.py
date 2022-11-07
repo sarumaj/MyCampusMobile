@@ -12,6 +12,7 @@ from kivy.clock import Clock
 from kivy.metrics import dp
 from kivy.properties import ListProperty, NumericProperty, ObjectProperty
 from kivy.uix.button import Button
+from kivymd.uix.banner import MDBanner
 from kivymd.uix.bottomsheet import MDCustomBottomSheet
 from kivymd.uix.boxlayout import MDBoxLayout
 from kivymd.uix.datatables import MDDataTable
@@ -82,6 +83,10 @@ class ExamResults(MDDataTable):
     def get_grade_for_rating(self) -> Callable:
         return self.screen.get_grade_for_rating
 
+    @property
+    def banner(self) -> MDBanner:
+        return self.screen.ids.banner
+
     def on_row_press(self, instance_row: object):
         self.row_index = int(instance_row.index / self.table_data.total_col_headings)
         if self.row_index < len(self.table_data.row_data) - 1:
@@ -89,15 +94,22 @@ class ExamResults(MDDataTable):
             grade_rating_matches = re.match(
                 r"(\d+\.\d+)\s?\((\d+\.\d+)%\)", grade_rating
             )
-            self.bottom_sheet = MDCustomBottomSheet(
-                screen=ExamResultModifyRequestContent(
-                    grade_value=grade_rating_matches
-                    and int(float(grade_rating_matches.group(2)))
-                    or 0,
-                    data_table=self,
+            if int(re.sub(r"[^\d]", "", credit)) > 0:
+                self.bottom_sheet = MDCustomBottomSheet(
+                    screen=ExamResultModifyRequestContent(
+                        grade_value=grade_rating_matches
+                        and int(float(grade_rating_matches.group(2)))
+                        or 0,
+                        data_table=self,
+                    )
                 )
-            )
-            self.bottom_sheet.open()
+                self.bottom_sheet.open()
+            else:
+                self.banner.text = [
+                    "Accessed record has no credit points assigned!",
+                    "Please reload view to fetch assigned credit points!",
+                ]
+                self.banner.show()
 
     def apply_row(self, rating: float):
         old_data = self.table_data.row_data[self.row_index]
@@ -138,8 +150,8 @@ class GradeChecker(MDScreen):
 
     def __init__(self, *, main_screen: MDScreen, **kwargs: dict[str, Any]):
         self.main_screen = main_screen
-        self.prepare_data_table()
         super().__init__(**kwargs)
+        self.prepare_data_table()
         self.ids.box_layout.add_widget(self.data_table)
         self.set_items()
 
@@ -179,11 +191,7 @@ class GradeChecker(MDScreen):
                             if record["ID"] in course["label"]:
                                 record.update({"Credits": course["credits"]})
         except BaseException:
-            self.ids.banner.text = [
-                "Failed to load curriculum entries!",
-                "Please reload manually!"
-            ]
-            self.ids.banner.show()
+            pass
 
         self.data_table = ExamResults(
             screen=self,
@@ -201,7 +209,7 @@ class GradeChecker(MDScreen):
     def refresh(self, *args):
         def refresh_callback(interval):
             if self.asyncloader is not None and not self.asyncloader.done:
-                return
+                self.asyncloader.cancel()
 
             self.data_table.clear_widgets()
             self.use_cache = False

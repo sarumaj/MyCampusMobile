@@ -2,7 +2,6 @@
 
 import re
 import sys
-from functools import partial
 from pathlib import Path
 from typing import Optional, TextIO
 from urllib.parse import urlencode
@@ -35,6 +34,9 @@ from .exceptions import ExceptionHandler, SignInFailed, SignOutFailed
 # definitions #
 #             #
 ###############
+
+MOCK_DIR = Path(__file__).parent / "mock"
+DUMP = False
 
 
 class ContextManager:
@@ -155,6 +157,15 @@ class Authenticator(Cache, ContextManager):
         )
         # start a cookie based session
         self._session = requests.Session()
+        self._session.headers.update(
+            {
+                "User-Agent": (
+                    "Mozilla/5.0 (X11; Linux x86_64) "
+                    "AppleWebKit/537.36 (KHTML, like Gecko) "
+                    "Chrome/107.0.0.0 Safari/537.36 Edg/107.0.1418.28"
+                )
+            }
+        )
 
         if username:
             self.username = username
@@ -185,11 +196,14 @@ class Authenticator(Cache, ContextManager):
 
         self.debug("Retrieving SAML request")
         # initialize session with response from mycampus
-        response = partial(self._session.get, "https://mycampus.iubh.de/my")()
+        response = self._session.get("https://mycampus.iubh.de/my")
         assert response.status_code == 200, "server responded with %d (%s)" % (
             response.status_code,
             response.text,
         )
+        if DUMP:
+            with open(MOCK_DIR / "auth.get_saml_request.reponse.text.dump", "w") as f:
+                f.write(response.text)
         # scrap SAML request for authentication
         soup = BeautifulSoup(response.text, "html.parser")
         SAMLrequest = urlencode(
@@ -199,6 +213,9 @@ class Authenticator(Cache, ContextManager):
             }
         )
         self.debug("Successfully retrieved SAML request")
+        if DUMP:
+            with open(MOCK_DIR / "saml_request.dump", "w") as f:
+                f.write(SAMLrequest)
         return SAMLrequest
 
     @ExceptionHandler("failed to retrieve SAML response", SignInFailed)
@@ -215,16 +232,20 @@ class Authenticator(Cache, ContextManager):
         """
 
         self.debug("Submitting SAML request")
-        response = partial(
-            self._session.post,
+        response = self._session.post(
             "https://login.iubh.de/idp/profile/SAML2/POST/SSO",
             headers={"Content-Type": "application/x-www-form-urlencoded"},
             data=SAMLrequest,
-        )()
+        )
         assert response.status_code == 200, "server responded with %d (%s)" % (
             response.status_code,
             response.text,
         )
+        if DUMP:
+            with open(
+                MOCK_DIR / "auth.get_saml_response#1.reponse.text.dump", "w"
+            ) as f:
+                f.write(response.text)
 
         # scrap hidden login form input fields
         soup = BeautifulSoup(response.text, "html.parser")
@@ -246,17 +267,21 @@ class Authenticator(Cache, ContextManager):
             }
         )
         self.debug("Submitting sign-in form")
-        response = partial(
-            self._session.post,
+        response = self._session.post(
             "https://login.iubh.de/idp/profile/SAML2/POST/SSO",
             params=querystring,
             headers={"Content-Type": "application/x-www-form-urlencoded"},
             data=form,
-        )()
+        )
         assert response.status_code == 200, "server responded with %d (%s)" % (
             response.status_code,
             response.text,
         )
+        if DUMP:
+            with open(
+                MOCK_DIR / "auth.get_saml_response#2.reponse.text.dump", "w"
+            ) as f:
+                f.write(response.text)
 
         # scrap SAML response
         soup = BeautifulSoup(response.text, "html.parser")
@@ -267,6 +292,9 @@ class Authenticator(Cache, ContextManager):
             }
         )
         self.debug("Successfully set up SAML response")
+        if DUMP:
+            with open(MOCK_DIR / "saml_response.dump", "w") as f:
+                f.write(SAMLresponse)
         return SAMLresponse
 
     @ExceptionHandler("failed to submit SAML request", SignInFailed)
@@ -280,12 +308,11 @@ class Authenticator(Cache, ContextManager):
         """
 
         self.debug("Submitting SAML response")
-        response = partial(
-            self._session.post,
+        response = self._session.post(
             "https://mycampus.iubh.de/auth/saml2/sp/saml2-acs.php/mycampus.iubh.de",
             headers={"Content-Type": "application/x-www-form-urlencoded"},
             data=SAMLresponse,
-        )()
+        )
         assert response.status_code == 200, "server responded with %d (%s)" % (
             response.status_code,
             response.text,
@@ -300,12 +327,12 @@ class Authenticator(Cache, ContextManager):
 
         # scrap logout endpoint to submit a sign-out request
         self.debug("Signing out")
-        response = partial(self._session.get, "https://mycampus.iubh.de/my/")()
+        response = self._session.get("https://mycampus.iubh.de/my/")
         soup = BeautifulSoup(response.text, "html.parser")
         logout = soup.select_one(
             'a[href^="https://mycampus.iubh.de/login/logout.php"]'
         ).get("href")
-        response = partial(self._session.get, logout)()
+        response = self._session.get(logout)
         assert response.status_code == 200, "server responded with %d (%s)" % (
             response.status_code,
             response.text,
@@ -317,8 +344,7 @@ class Authenticator(Cache, ContextManager):
         Tear-down for garbage collector
         """
 
-        self._session.close()
-        self._loop.close()
+        # self._session.close()
         Cache.__del__(self)
 
 
@@ -331,4 +357,5 @@ if __name__ == "__main__":
         filepath=__file__,
         verbose=True,
     ) as handler:
-        handler.sign_in()
+        # handler.sign_in()
+        handler.get_saml_response(handler.get_saml_request())

@@ -2,7 +2,6 @@
 
 import re
 import sys
-from functools import partial
 from pathlib import Path
 from typing import Generator, Optional, Union
 
@@ -125,7 +124,7 @@ class Downloader(Authenticator):
 
         self.debug(f"Requesting document from {link}")
 
-        response = partial(self._session.get, link)()
+        response = self._session.get(link)
         assert response.status_code == 200, "server responded with %d (%s)" % (
             response.status_code,
             response.text,

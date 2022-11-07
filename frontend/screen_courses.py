@@ -818,9 +818,15 @@ class CourseBrowser(MDScreen):
             Dispatch both workers one after another.
             """
 
-            await set_courses()
-            await set_bookable_courses()
+            if self.ids.bottom_navigation.current == "bookable":
+                await set_bookable_courses()
+                await set_courses()
+            else:
+                await set_courses()
+                await set_bookable_courses()
 
+        if self.asyncloader is not None and not self.asyncloader.done:
+            self.asyncloader.cancel()
         self.asyncloader = asynckivy.start(all_together())
 
     def refresh(self):
@@ -831,7 +837,7 @@ class CourseBrowser(MDScreen):
         def refresh_callback(interval):
             # do nothing if already dispatched
             if self.asyncloader is not None and not self.asyncloader.done:
-                return
+                self.asyncloader.cancel()
 
             # clear widgets from tabs
             self.ids.active_table_layout.clear_widgets()
