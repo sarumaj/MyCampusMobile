@@ -27,6 +27,7 @@ if __name__ == "__main__" and __package__ is None:
     __package__ = ".".join(parent.parts[len(top.parts) :])
 
 from .cache import Cache
+from .dumper import MockDumper
 from .exceptions import ExceptionHandler, SignInFailed, SignOutFailed
 
 ###############
@@ -34,9 +35,6 @@ from .exceptions import ExceptionHandler, SignInFailed, SignOutFailed
 # definitions #
 #             #
 ###############
-
-MOCK_DIR = Path(__file__).parent / "mock"
-DUMP = False
 
 
 class ContextManager:
@@ -201,9 +199,7 @@ class Authenticator(Cache, ContextManager):
             response.status_code,
             response.text,
         )
-        if DUMP:
-            with open(MOCK_DIR / "auth.get_saml_request.reponse.text.dump", "w") as f:
-                f.write(response.text)
+        MockDumper.dump("response.text")
         # scrap SAML request for authentication
         soup = BeautifulSoup(response.text, "html.parser")
         SAMLrequest = urlencode(
@@ -213,9 +209,7 @@ class Authenticator(Cache, ContextManager):
             }
         )
         self.debug("Successfully retrieved SAML request")
-        if DUMP:
-            with open(MOCK_DIR / "saml_request.dump", "w") as f:
-                f.write(SAMLrequest)
+        MockDumper.dump("SAMLrequest", True)
         return SAMLrequest
 
     @ExceptionHandler("failed to retrieve SAML response", SignInFailed)
@@ -241,11 +235,7 @@ class Authenticator(Cache, ContextManager):
             response.status_code,
             response.text,
         )
-        if DUMP:
-            with open(
-                MOCK_DIR / "auth.get_saml_response#1.reponse.text.dump", "w"
-            ) as f:
-                f.write(response.text)
+        MockDumper.dump("response.text")
 
         # scrap hidden login form input fields
         soup = BeautifulSoup(response.text, "html.parser")
@@ -277,11 +267,7 @@ class Authenticator(Cache, ContextManager):
             response.status_code,
             response.text,
         )
-        if DUMP:
-            with open(
-                MOCK_DIR / "auth.get_saml_response#2.reponse.text.dump", "w"
-            ) as f:
-                f.write(response.text)
+        MockDumper.dump("response.text")
 
         # scrap SAML response
         soup = BeautifulSoup(response.text, "html.parser")
@@ -292,9 +278,7 @@ class Authenticator(Cache, ContextManager):
             }
         )
         self.debug("Successfully set up SAML response")
-        if DUMP:
-            with open(MOCK_DIR / "saml_response.dump", "w") as f:
-                f.write(SAMLresponse)
+        MockDumper.dump("SAMLresponse", True)
         return SAMLresponse
 
     @ExceptionHandler("failed to submit SAML request", SignInFailed)
@@ -317,6 +301,7 @@ class Authenticator(Cache, ContextManager):
             response.status_code,
             response.text,
         )
+        MockDumper.dump("response.text")
         self.debug("Successfully submitted SAML response")
 
     @ExceptionHandler("sign-out request failed", SignOutFailed)
@@ -328,6 +313,7 @@ class Authenticator(Cache, ContextManager):
         # scrap logout endpoint to submit a sign-out request
         self.debug("Signing out")
         response = self._session.get("https://mycampus.iubh.de/my/")
+        MockDumper.dump("response.text")
         soup = BeautifulSoup(response.text, "html.parser")
         logout = soup.select_one(
             'a[href^="https://mycampus.iubh.de/login/logout.php"]'
@@ -337,6 +323,7 @@ class Authenticator(Cache, ContextManager):
             response.status_code,
             response.text,
         )
+        MockDumper.dump("response.text")
         self.debug("Successfully signed out")
 
     def __del__(self):
@@ -357,5 +344,5 @@ if __name__ == "__main__":
         filepath=__file__,
         verbose=True,
     ) as handler:
-        # handler.sign_in()
-        handler.get_saml_response(handler.get_saml_request())
+        MockDumper.clear()
+        handler.sign_in()
