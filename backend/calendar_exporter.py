@@ -27,6 +27,7 @@ if __name__ == "__main__" and __package__ is None:
     __package__ = ".".join(parent.parts[len(top.parts) :])
 
 from .auth import Authenticator
+from .dumper import dump4mock
 from .exceptions import ExceptionHandler, RequestFailed
 
 ###############
@@ -111,6 +112,7 @@ class CalendarExporter(Authenticator):
             response.status_code,
             response.text,
         )
+        dump4mock("response.text")
         self.debug("Successfully retrieved export options")
 
         soup = BeautifulSoup(response.text, "html.parser")
@@ -163,6 +165,7 @@ class CalendarExporter(Authenticator):
             response.status_code,
             response.text,
         )
+        dump4mock("response.text")
 
         cal = Calendar.from_ical(response.text)
         result = {
@@ -183,7 +186,8 @@ class CalendarExporter(Authenticator):
         }
         self[f"{self.username}.{fname}"] = result
         self.debug("Successfully exported calendar events")
-
+        dump4mock("fname")
+        dump4mock("result")
         return fname, result
 
 
@@ -196,5 +200,6 @@ if __name__ == "__main__":
         filepath=__file__,
         verbose=True,
     ) as handler:
+        dump4mock([CalendarExporter.__name__])
         handler.sign_in()
         print(handler.export_calendar())

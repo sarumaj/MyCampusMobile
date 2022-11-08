@@ -1,5 +1,6 @@
 # -*- coding: utf-8 -*-
 
+import base64
 import re
 import sys
 from pathlib import Path
@@ -23,6 +24,7 @@ if __name__ == "__main__" and __package__ is None:
     __package__ = ".".join(parent.parts[len(top.parts) :])
 
 from .auth import Authenticator
+from .dumper import dump4mock
 from .exceptions import ExceptionHandler, RequestFailed
 
 ###############
@@ -37,8 +39,7 @@ class Downloader(Authenticator):
     Implements methods to download course materials.
     """
 
-    ExceptionHandler("could not save specified content", RequestFailed)
-
+    @ExceptionHandler("could not save specified content", RequestFailed)
     def save(
         self,
         filename: str,
@@ -88,8 +89,7 @@ class Downloader(Authenticator):
         # return path object
         return target
 
-    ExceptionHandler("could not download specified content", RequestFailed)
-
+    @ExceptionHandler("could not download specified content", RequestFailed)
     def download(
         self, link: str, cached: Optional[bool] = False, chunk: Optional[int] = None
     ) -> tuple[str, Union[bytes, Generator[bytes, None, None]], int]:
@@ -114,13 +114,14 @@ class Downloader(Authenticator):
                     content-lenght.
         """
 
+        cache_key = f"{self.username}.link({base64.b64encode(link.encode('utf-8')).decode('utf-8')})"
         if all(
             (
-                cached and self.get(f"{self.username}.{link}") is not None,
+                cached and self.get(cache_key) is not None,
                 chunk is None,
             )
         ):
-            return self[f"{self.username}.{link}"]
+            return self[cache_key]
 
         self.debug(f"Requesting document from {link}")
 
@@ -129,6 +130,9 @@ class Downloader(Authenticator):
             response.status_code,
             response.text,
         )
+        dump4mock("response.text")
+        dump4mock("response.content")
+        dump4mock("response.headers")
 
         try:
             content_disposition = re.search(
@@ -137,15 +141,30 @@ class Downloader(Authenticator):
         except BaseException:
             content_disposition = "unknown"
 
+        dump4mock("content_disposition")
         content_length = int(response.headers["Content-Length"])
+        dump4mock("content_length")
 
         self.debug("Successfully downloaded content")
         if chunk is None:
             result = (content_disposition, response.content, content_length)
-            self[f"{self.username}.{link}"] = result
+            self[cache_key] = result
             return result
         return (
             content_disposition,
             response.iter_content(chunk_size=chunk),
             content_length,
         )
+
+
+if __name__ == "__main__":
+    handler = Downloader(
+        "username",
+        "password",
+        max_len=100,
+        max_age=30,
+        filepath=__file__,
+        verbose=True,
+    )
+    dump4mock([Downloader.__name__])
+    handler.download("https://www.example.com")

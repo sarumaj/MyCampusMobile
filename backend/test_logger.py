@@ -27,7 +27,7 @@ from .logger import Logger
 
 class CacheTestCase(unittest.TestCase):
     def setUp(self):
-        temp_dir = tempfile.gettempdir()
+        temp_dir = tempfile.mkdtemp()
         self.logger_name = Path(temp_dir).name
         self.logger = Logger(filepath=temp_dir, verbose=True)
 

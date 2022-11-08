@@ -24,6 +24,7 @@ if __name__ == "__main__" and __package__ is None:
     __package__ = ".".join(parent.parts[len(top.parts) :])
 
 from .auth import Authenticator
+from .dumper import dump4mock
 from .exceptions import ExceptionHandler, RequestFailed
 
 ###############
@@ -79,6 +80,7 @@ class GradesReporter(Authenticator):
             response.status_code,
             response.text,
         )
+        dump4mock("response.text")
         soup = BeautifulSoup(response.text, "html.parser")
         # load iframe content
         url = soup.select_one("iframe", id="ac5frame").get("src")
@@ -87,6 +89,7 @@ class GradesReporter(Authenticator):
             response.status_code,
             response.text,
         )
+        dump4mock("response.text")
         self.debug("Successfully retrieved legend object")
 
         self.debug("Requesting grades table object")
@@ -97,6 +100,7 @@ class GradesReporter(Authenticator):
             response.status_code,
             response.text,
         )
+        dump4mock("response.text")
         soup = BeautifulSoup(response.text, "html.parser")
         # retrieve legend from HTML table object
         legend = [
@@ -161,6 +165,7 @@ class GradesReporter(Authenticator):
                         }
                         for gr in grades
                     ]
+        dump4mock("result")
         self[f"{self.username}.grades"] = result
         self.debug("Successfully retrieved grades")
         return result
@@ -175,6 +180,7 @@ if __name__ == "__main__":
         filepath=__file__,
         verbose=True,
     ) as handler:
+        dump4mock([GradesReporter.__name__])
         handler.sign_in()
         for k, v in handler.get_grades().items():
             print(k)
