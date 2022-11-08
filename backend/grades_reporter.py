@@ -180,7 +180,7 @@ if __name__ == "__main__":
         filepath=__file__,
         verbose=True,
     ) as handler:
-        dump4mock([GradesReporter.__name__])
+        dump4mock([GradesReporter.__name__, Authenticator.__name__])
         handler.sign_in()
         for k, v in handler.get_grades().items():
             print(k)

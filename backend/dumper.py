@@ -28,7 +28,7 @@ class dump4mock(metaclass=__dump4mockMeta__):
     # enable/disable globally for selected class instances
     DUMP_CLASS = ["Authenticator", "CalendarExporter", "Downloader", "GradesReporter"]
     # location for dumped files
-    MOCK_DIR = Path(__file__).parent / "mock"
+    MOCK_DIR = Path(__file__).parents[1] / "data" / "mock"
 
     def __new__(
         cls, fname: Union[str, Path], overwrite: bool = False, *args, **kwargs

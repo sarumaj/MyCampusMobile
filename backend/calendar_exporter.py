@@ -200,6 +200,6 @@ if __name__ == "__main__":
         filepath=__file__,
         verbose=True,
     ) as handler:
-        dump4mock([CalendarExporter.__name__])
+        dump4mock([CalendarExporter.__name__, Authenticator.__name__])
         handler.sign_in()
         print(handler.export_calendar())
