@@ -4,7 +4,7 @@ import re
 import sys
 from pathlib import Path
 from typing import Optional, TextIO
-from urllib.parse import urlencode
+from urllib.parse import quote, urlencode
 
 import requests
 from bs4 import BeautifulSoup
@@ -196,7 +196,10 @@ class Authenticator(Cache, ContextManager):
             response.status_code,
             response.text,
         )
-        dump4mock("response.text")
+        dump4mock(
+            "response.text@session.get(%s)"
+            % quote("https://mycampus.iubh.de/my", safe="")
+        )
         # scrap SAML request for authentication
         soup = BeautifulSoup(response.text, "html.parser")
         SAMLrequest = urlencode(
@@ -232,7 +235,10 @@ class Authenticator(Cache, ContextManager):
             response.status_code,
             response.text,
         )
-        dump4mock("response.text")
+        dump4mock(
+            "response.text@session.post(%s,data=SAMLrequest)"
+            % quote("https://login.iubh.de/idp/profile/SAML2/POST/SSO", safe="")
+        )
 
         # scrap hidden login form input fields
         soup = BeautifulSoup(response.text, "html.parser")
@@ -264,7 +270,10 @@ class Authenticator(Cache, ContextManager):
             response.status_code,
             response.text,
         )
-        dump4mock("response.text")
+        dump4mock(
+            "response.text@session.post(%s,data=form)"
+            % quote("https://login.iubh.de/idp/profile/SAML2/POST/SSO", safe="")
+        )
 
         # scrap SAML response
         soup = BeautifulSoup(response.text, "html.parser")
@@ -298,7 +307,13 @@ class Authenticator(Cache, ContextManager):
             response.status_code,
             response.text,
         )
-        dump4mock("response.text")
+        dump4mock(
+            "response.text@session.post(%s,data=SAMLresponse)"
+            % quote(
+                "https://mycampus.iubh.de/auth/saml2/sp/saml2-acs.php/mycampus.iubh.de",
+                safe="",
+            )
+        )
         self.debug("Successfully submitted SAML response")
 
     @ExceptionHandler("sign-out request failed", SignOutFailed)
@@ -310,7 +325,10 @@ class Authenticator(Cache, ContextManager):
         # scrap logout endpoint to submit a sign-out request
         self.debug("Signing out")
         response = self._session.get("https://mycampus.iubh.de/my/")
-        dump4mock("response.text")
+        dump4mock(
+            "response.text@session.get(%s)"
+            % quote("https://mycampus.iubh.de/my/", safe="")
+        )
         soup = BeautifulSoup(response.text, "html.parser")
         logout = soup.select_one(
             'a[href^="https://mycampus.iubh.de/login/logout.php"]'
@@ -320,7 +338,7 @@ class Authenticator(Cache, ContextManager):
             response.status_code,
             response.text,
         )
-        dump4mock("response.text")
+        dump4mock("response.text@session.get(logout)")
         self.debug("Successfully signed out")
 
     def __del__(self):

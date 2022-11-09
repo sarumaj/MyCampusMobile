@@ -41,11 +41,18 @@ class CalendarExporterTestCase(unittest.TestCase):
     def test_calendar_export(self, session_mock):
         session_mock.get.return_value = MagicMock(
             status_code=200,
-            text=dump4mock["CalendarExporter.export_calendar.response.text#1"],
+            text=dump4mock[
+                "CalendarExporter.export_calendar.response.text"
+                "@session.get(https%3A%2F%2Fmycampus.iubh.de%2Fcalendar%2Fexport.php)#1"
+            ],
         )
         session_mock.post.return_value = MagicMock(
             status_code=200,
-            text=dump4mock["CalendarExporter.export_calendar.response.text#2"],
+            text=dump4mock[
+                "CalendarExporter.export_calendar.response.text"
+                "@session.post(https%3A%2F%2Fmycampus.iubh.de%2Fcalendar%2Fexport.php,"
+                "data=form)#1"
+            ],
         )
         self.assertEqual(
             self.client.export_calendar(),

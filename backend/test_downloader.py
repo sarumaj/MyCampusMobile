@@ -41,16 +41,20 @@ class DownloaderTestCase(unittest.TestCase):
     def test_download(self, session_mock):
         session_mock.get.return_value = MagicMock(
             status_code=200,
-            text=dump4mock["Downloader.download.response.text#1"],
-            headers=dump4mock["Downloader.download.response.headers#1"],
-            content=dump4mock["Downloader.download.response.content#1"],
+            text=dump4mock["Downloader.download.response.text@session.get(link)#1"],
+            headers=dump4mock[
+                "Downloader.download.response.headers@session.get(link)#1"
+            ],
+            content=dump4mock[
+                "Downloader.download.response.content@session.get(link)#1"
+            ],
         )
 
         self.assertEqual(
             self.client.download("https://www.example.com"),
             (
                 dump4mock["Downloader.download.content_disposition#1"],
-                dump4mock["Downloader.download.response.content#1"],
+                dump4mock["Downloader.download.response.content@session.get(link)#1"],
                 dump4mock["Downloader.download.content_length#1"],
             ),
         )
@@ -59,7 +63,7 @@ class DownloaderTestCase(unittest.TestCase):
         dir = Path(tempfile.mkdtemp())
         location = self.client.save(
             dump4mock["Downloader.download.content_disposition#1"],
-            dump4mock["Downloader.download.response.content#1"],
+            dump4mock["Downloader.download.response.content@session.get(link)#1"],
             dir,
         )
         self.assertEqual(
@@ -67,7 +71,7 @@ class DownloaderTestCase(unittest.TestCase):
         )
         location = self.client.save(
             dump4mock["Downloader.download.content_disposition#1"],
-            dump4mock["Downloader.download.response.content#1"],
+            dump4mock["Downloader.download.response.content@session.get(link)#1"],
             dir,
         )
         self.assertEqual(

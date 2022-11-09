@@ -130,9 +130,9 @@ class Downloader(Authenticator):
             response.status_code,
             response.text,
         )
-        dump4mock("response.text")
-        dump4mock("response.content")
-        dump4mock("response.headers")
+        dump4mock("response.text@session.get(link)")
+        dump4mock("response.content@session.get(link)")
+        dump4mock("response.headers@session.get(link)")
 
         try:
             content_disposition = re.search(

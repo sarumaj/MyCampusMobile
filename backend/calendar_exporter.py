@@ -4,7 +4,7 @@ import sys
 from enum import Enum
 from pathlib import Path
 from typing import Any
-from urllib.parse import urlencode
+from urllib.parse import quote, urlencode
 
 from bs4 import BeautifulSoup
 from icalendar import Calendar
@@ -112,7 +112,10 @@ class CalendarExporter(Authenticator):
             response.status_code,
             response.text,
         )
-        dump4mock("response.text")
+        dump4mock(
+            "response.text@session.get(%s)"
+            % quote("https://mycampus.iubh.de/calendar/export.php", safe="")
+        )
         self.debug("Successfully retrieved export options")
 
         soup = BeautifulSoup(response.text, "html.parser")
@@ -165,7 +168,10 @@ class CalendarExporter(Authenticator):
             response.status_code,
             response.text,
         )
-        dump4mock("response.text")
+        dump4mock(
+            "response.text@session.post(%s,data=form)"
+            % quote("https://mycampus.iubh.de/calendar/export.php", safe="")
+        )
 
         cal = Calendar.from_ical(response.text)
         result = {
@@ -184,10 +190,10 @@ class CalendarExporter(Authenticator):
                 for event in cal.walk("vevent")
             ],
         }
-        self[f"{self.username}.{fname}"] = result
-        self.debug("Successfully exported calendar events")
         dump4mock("fname")
         dump4mock("result")
+        self[f"{self.username}.{fname}"] = result
+        self.debug("Successfully exported calendar events")
         return fname, result
 
 

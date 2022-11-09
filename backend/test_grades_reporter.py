@@ -42,15 +42,23 @@ class GradesReporterTestCase(unittest.TestCase):
         session_mock.get.side_effect = (
             MagicMock(
                 status_code=200,
-                text=dump4mock["GradesReporter.get_grades.response.text#1"],
+                text=dump4mock[
+                    "GradesReporter.get_grades.response.text"
+                    "@session.get(https%3A%2F%2Fmycampus.iubh.de%2Flocal%2Fiubh_ac5sso%2Fac5notenuebersicht.php)#1"
+                ],
             ),
             MagicMock(
                 status_code=200,
-                text=dump4mock["GradesReporter.get_grades.response.text#2"],
+                text=dump4mock[
+                    "GradesReporter.get_grades.response.text@session.get(utl)#1"
+                ],
             ),
             MagicMock(
                 status_code=200,
-                text=dump4mock["GradesReporter.get_grades.response.text#3"],
+                text=dump4mock[
+                    "GradesReporter.get_grades.response.text"
+                    "@session.get(https%3A%2F%2Fcare-fs.iubh.de%2Fen%2Fexaminations%2Fexamination-results.php)#1"
+                ],
             ),
         )
 

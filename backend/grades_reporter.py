@@ -3,6 +3,7 @@
 import re
 import sys
 from pathlib import Path
+from urllib.parse import quote
 
 from bs4 import BeautifulSoup
 
@@ -80,7 +81,13 @@ class GradesReporter(Authenticator):
             response.status_code,
             response.text,
         )
-        dump4mock("response.text")
+        dump4mock(
+            "response.text@session.get(%s)"
+            % quote(
+                "https://mycampus.iubh.de/local/iubh_ac5sso/ac5notenuebersicht.php",
+                safe="",
+            )
+        )
         soup = BeautifulSoup(response.text, "html.parser")
         # load iframe content
         url = soup.select_one("iframe", id="ac5frame").get("src")
@@ -89,7 +96,7 @@ class GradesReporter(Authenticator):
             response.status_code,
             response.text,
         )
-        dump4mock("response.text")
+        dump4mock("response.text@session.get(utl)")
         self.debug("Successfully retrieved legend object")
 
         self.debug("Requesting grades table object")
@@ -100,7 +107,13 @@ class GradesReporter(Authenticator):
             response.status_code,
             response.text,
         )
-        dump4mock("response.text")
+        dump4mock(
+            "response.text@session.get(%s)"
+            % quote(
+                "https://care-fs.iubh.de/en/examinations/examination-results.php",
+                safe="",
+            )
+        )
         soup = BeautifulSoup(response.text, "html.parser")
         # retrieve legend from HTML table object
         legend = [

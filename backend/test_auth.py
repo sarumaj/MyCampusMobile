@@ -41,7 +41,10 @@ class AuthenticatorTestCase(unittest.TestCase):
     def test_get_saml_request(self, session_mock):
         session_mock.get.return_value = MagicMock(
             status_code=200,
-            text=dump4mock["Authenticator.get_saml_request.response.text#1"],
+            text=dump4mock[
+                "Authenticator.get_saml_request.response.text"
+                "@session.get(https%3A%2F%2Fmycampus.iubh.de%2Fmy)#1"
+            ],
         )
         self.assertEqual(
             self.auth.get_saml_request(),
@@ -57,11 +60,19 @@ class AuthenticatorTestCase(unittest.TestCase):
         session_mock.post.side_effect = (
             MagicMock(
                 status_code=200,
-                text=dump4mock["Authenticator.get_saml_response.response.text#1"],
+                text=dump4mock[
+                    "Authenticator.get_saml_response.response.text"
+                    "@session.post(https%3A%2F%2Flogin.iubh.de%2Fidp%2Fprofile%2FSAML2%2FPOST%2FSSO,"
+                    "data=SAMLrequest)#1"
+                ],
             ),
             MagicMock(
                 status_code=200,
-                text=dump4mock["Authenticator.get_saml_response.response.text#2"],
+                text=dump4mock[
+                    "Authenticator.get_saml_response.response.text"
+                    "@session.post(https%3A%2F%2Flogin.iubh.de%2Fidp%2Fprofile%2FSAML2%2FPOST%2FSSO,"
+                    "data=form)#1"
+                ],
             ),
         )
         self.assertEqual(
@@ -78,7 +89,11 @@ class AuthenticatorTestCase(unittest.TestCase):
         )
         session_mock.post.return_value = MagicMock(
             status_code=200,
-            text=dump4mock["Authenticator.submit_saml_response.response.text#1"],
+            text=dump4mock[
+                "Authenticator.submit_saml_response.response.text"
+                "@session.post(https%3A%2F%2Fmycampus.iubh.de%2Fauth%2Fsaml2%2Fsp%2Fsaml2-acs.php%2Fmycampus.iubh.de,"
+                "data=SAMLresponse)#1"
+            ],
         )
         self.assertEqual(
             self.auth.submit_saml_response(self.auth.get_saml_response("SAML request")),
@@ -91,11 +106,16 @@ class AuthenticatorTestCase(unittest.TestCase):
         session_mock.get.side_effect = (
             MagicMock(
                 status_code=200,
-                text=dump4mock["Authenticator.close.response.text#1"],
+                text=dump4mock[
+                    "Authenticator.close.response.text"
+                    "@session.get(https%3A%2F%2Fmycampus.iubh.de%2Fmy%2F)#1"
+                ],
             ),
             MagicMock(
                 status_code=200,
-                text=dump4mock["Authenticator.close.response.text#2"],
+                text=dump4mock[
+                    "Authenticator.close.response.text@session.get(logout)#1"
+                ],
             ),
         )
         self.assertEqual(self.auth.close(), None)

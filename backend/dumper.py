@@ -1,7 +1,8 @@
 # -*- coding: utf-8 -*-
 
 import hashlib
-from inspect import getmembers, getmro, isfunction, stack
+import re
+from inspect import getmembers, getmro, isfunction, stack, ismethod
 from pathlib import Path
 from typing import Any, Union
 
@@ -26,7 +27,13 @@ class dump4mock(metaclass=__dump4mockMeta__):
     """
 
     # enable/disable globally for selected class instances
-    DUMP_CLASS = ["Authenticator", "CalendarExporter", "Downloader", "GradesReporter"]
+    DUMP_CLASS = [
+        "Authenticator",
+        "CalendarExporter",
+        "CourseBrowser",
+        "Downloader",
+        "GradesReporter",
+    ]
     # location for dumped files
     MOCK_DIR = Path(__file__).parents[1] / "data" / "mock"
 
@@ -72,7 +79,11 @@ class dump4mock(metaclass=__dump4mockMeta__):
         Object is identified by the key within the local namespace of given frame.
 
         Positional arguments:
-            key: str.
+            key: str,
+                examples:
+                     - result.text
+                     - result[1]
+                     - result.get(0, None)
 
             overwrite: bool,
                 if True, the dump file will be overwritten.
@@ -86,36 +97,62 @@ class dump4mock(metaclass=__dump4mockMeta__):
         # method's frame (local namespace)
         frame_locals = frames[context][0].f_locals
 
+        # simplify key in order to prevent violation of allowed filename charset
+        subscription = re.compile(r"(\(.*\)|\[.+\])(?=@)")
+        base = subscription.sub("", str(key), 1)
+
         # template for the file name and keyword mapping for formatting
         tmpl, kwargs = "{class}.{method}.{key}#{cnt}.dump", {
             "class": frame_locals.get("self")
             and frame_locals["self"].__class__.__name__
+            or frame_locals.get("cls")
+            and frame_locals["cls"].__name__
             or "root",
             "method": frames[context].function,
             "cnt": 1,
-            "key": key,
+            "key": base,
         }
 
         # apply method resolution order
-        if frame_locals.get("self"):
+        def apply_mro(cls):
             # apply MRO on class level and not instance level
-            for cls_object in getmro(frame_locals.get("self").__class__):
+            for cls_object in getmro(cls):
                 # retrieve methods (for class level identified as function objects)
-                for name, _ in getmembers(cls_object, predicate=isfunction):
+                for name, _ in getmembers(cls_object, predicate=lambda o: isfunction(o) or ismethod(o)):
                     # method found somewhere else in the MRO
                     if name == kwargs["method"]:
                         kwargs["class"] = cls_object.__name__
 
+        if frame_locals.get("self"):
+            apply_mro(frame_locals.get("self").__class__)
+        elif frame_locals.get("cls"):
+            apply_mro(frame_locals.get("cls"))
+        else:
+            for value in frame_locals.values():
+                if isinstance(value, type):
+                    apply_mro(value)
+                elif isinstance(value, object):
+                    apply_mro(value.__class__)
+
         target = cls.MOCK_DIR / tmpl.format(**kwargs)
+        # strip annotations
+        base = re.sub("@(.*)$", "", base)
         # retrieve content from the method's namespace
-        content = frame_locals.get(str(key).split(".")[0])
+        content = frame_locals.get(base.split(".")[0])
 
         # if content is an object with attribute access chain
         # retrieve its final attribute in chain
-        if len(str(key).split(".")) > 1:
-            for attr in str(key).split(".")[1:]:
+        if len(base.split(".")) > 1:
+            for attr in base.split(".")[1:]:
                 # in the case attr is not present, content = content
                 content = getattr(content, attr, content)
+
+        # in the case the key descripes an access method or subscription
+        # perform it to retrieve content
+        if subscription.search(str(key)):
+            content = eval("content%s" % subscription.search(str(key)).group(1))
+
+        # requirements for content to be valid
         if content is not None and kwargs["class"] in cls.DUMP_CLASS:
             dump = pickle.dumps(content)
             if not overwrite:
@@ -172,6 +209,18 @@ class dump4mock(metaclass=__dump4mockMeta__):
             for file in cls.MOCK_DIR.glob(f"{name}.*.dump"):
                 file.unlink()
 
+class Test:
+    @classmethod
+    def test(cls2, idx):
+        val = list(range(10))
+        dump4mock("val[%(c)d]@test(idx=%(c)d),test(idx=%(c)d)@test(idx=%(c)d)" % {'c':idx})
+        return val[idx]
+
+class Child(Test):
+    pass
 
 if __name__ == "__main__":
-    help(dump4mock)
+    #help(dump4mock)
+    dump4mock.DUMP_CLASS.extend(['Child', 'Test'])
+    Child().test(1)
+    print(dump4mock["Child.test.val@test(idx=%(c)d),test(idx=%(c)d)@test(idx=%(c)d)#1" % {'c':1}])

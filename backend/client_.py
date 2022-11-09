@@ -62,7 +62,10 @@ class Client_(ContextManager, Cache):
 
     # CalendarExporter
     export_calendar = MagicMock(
-        return_value=dump4mock["CalendarExporter.export_calendar.result#1"]
+        return_value=(
+            dump4mock["CalendarExporter.export_calendar.fname#1"],
+            dump4mock["CalendarExporter.export_calendar.result#1"],
+        )
     )
 
     # Downloader
@@ -70,7 +73,7 @@ class Client_(ContextManager, Cache):
     download = MagicMock(
         return_value=(
             dump4mock["Downloader.download.content_disposition#1"],
-            dump4mock["Downloader.download.response.content#1"],
+            dump4mock["Downloader.download.response.content@session.get(link)#1"],
             dump4mock["Downloader.download.content_length#1"],
         )
     )
@@ -78,7 +81,20 @@ class Client_(ContextManager, Cache):
     # GradesReporter
     get_grades = MagicMock(return_value=dump4mock["GradesReporter.get_grades.result#1"])
 
+    # CourseBrowser
+    list_courses = MagicMock(
+        return_value=dump4mock("CourseBrowser.list_courses.result#1")
+    )
+    list_course_resources = MagicMock(
+        side_effect=lambda course_id: {
+            course["id"]: dump4mock(
+                "CourseBrowser.list_course_resources.result[%d]#1" % course["id"]
+            )
+            for course in dump4mock("CourseBrowser.list_courses.result#1")
+        }[course_id]
+    )
+
 
 if __name__ == "__main__":
     with Client_(True, "hi") as mock:
-        print(mock.get_grades())
+        print(mock.list_course_resources(2639))

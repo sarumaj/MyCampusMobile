@@ -3,7 +3,7 @@
 import re
 import sys
 from pathlib import Path
-from urllib.parse import urlencode
+from urllib.parse import quote, urlencode
 
 import networkx as nx
 from bs4 import BeautifulSoup
@@ -26,6 +26,7 @@ if __name__ == "__main__" and __package__ is None:
     __package__ = ".".join(parent.parts[len(top.parts) :])
 
 from .auth import Authenticator
+from .dumper import dump4mock
 from .exceptions import ExceptionHandler, RequestFailed
 
 ###############
@@ -67,6 +68,14 @@ class CourseBrowser(Authenticator):
 
         self.debug("Requesting course list")
         response = self._session.get("https://mycampus.iubh.de/my/")
+        assert response.status_code == 200, "server responded with %d (%s)" % (
+            response.status_code,
+            response.text,
+        )
+        dump4mock(
+            "response.text@session.get(%s)"
+            % quote("https://mycampus.iubh.de/my/", safe="")
+        )
         soup = BeautifulSoup(response.text, "html.parser")
         result = [
             {
@@ -85,6 +94,7 @@ class CourseBrowser(Authenticator):
                 ),
             ]
         ]
+        dump4mock("result")
         self[f"{self.username}.courses"] = result
         self.debug("Successfully retrieved course list")
         return result
@@ -128,6 +138,10 @@ class CourseBrowser(Authenticator):
             response.status_code,
             response.text,
         )
+        dump4mock(
+            "response.text@session.get(%s,params={course_id=%d})"
+            % (quote("https://mycampus.iubh.de/course/view.php", safe=""), course_id)
+        )
 
         soup = BeautifulSoup(response.text, "html.parser")
         result = {
@@ -146,7 +160,9 @@ class CourseBrowser(Authenticator):
                 ]
             },
         }
+
         self[f"{self.username}.resources"] = result
+        dump4mock("result[%(c)d]@course_id=%(c)d" % {'c':course_id})
         self.debug("Successfully retrieved course view")
         return result[course_id]
 
@@ -277,6 +293,7 @@ class CourseBrowser(Authenticator):
             response.status_code,
             response.text,
         )
+        dump4mock("response.text@session.get(%s)" % quote("https://mycampus.iubh.de/local/iubh_ac5sso/ac5kursbuchung.php", safe=''))
         try:
             # set course registration context
             regex = re.compile(
@@ -284,6 +301,7 @@ class CourseBrowser(Authenticator):
                 + re.escape("https://care-fs.iubh.de/img/mycsso/set.php")
                 + '.*?)(?=")'
             )
+            dump4mock('regex.search("%s")@session.get(%s)' % (response.text, quote("https://mycampus.iubh.de/local/iubh_ac5sso/ac5kursbuchung.php", safe='')))
             if regex.search(response.text):
                 self._session.get(regex.search(response.text).group(1))
             else:
@@ -306,11 +324,13 @@ class CourseBrowser(Authenticator):
             response = self._session.get(
                 "https://care-fs.iubh.de/en/study/curricular-course-registration.php"
             )
+            dump4mock("response.text@session.get(%s)" % quote("https://care-fs.iubh.de/en/study/curricular-course-registration.php", safe=''))
             regex = re.compile(
                 r'\{"id":"(\d+)","classId":"\d+",'
                 r'"studyProgramId":"\d+","focusIds":\[.*\]\}'
             )
             booking_id = regex.search(response.text).group(1)
+            dump4mock("booking_id")
         except BaseException:
             self.warning(
                 "failed to set context for booking id",
@@ -882,10 +902,12 @@ if __name__ == "__main__":
         filepath=__file__,
         verbose=True,
     ) as handler:
+        dump4mock([CourseBrowser.__name__, Authenticator.__name__])
         handler.sign_in()
-        print(handler.get_booking_id())
-        print(handler.get_curricullum_entries(set(), set()))
-        # print(*handler.list_courses(), sep='\n')
+        for course in handler.list_courses():
+            handler.list_course_resources(int(course["id"]))
+        handler.get_booking_id()
+        # print(handler.get_curricullum_entries(set(), set()))
         # print(*handler.list_course_resources(1902), sep='\n')
         # import json
         # print(json.dumps(handler.get_courses_to_register(cached=False), indent=4))
