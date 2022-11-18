@@ -135,5 +135,4 @@ dmypy.json
 *.dat
 *.db
 *.log
-*.dump
 *.apk
