@@ -1,0 +1,54 @@
+#:kivy 2.1.0
+
+<ArrowButton>:
+    background_normal: ""
+    background_down: ""
+    background_color: 1, 1, 1, .5
+    size_hint: .2, .2
+    pos_hint: {"top": .9}
+    font_size: "20sp"
+
+<MonthYearLabel>:
+    pos_hint: {"top": 1, "center_x": .5}
+    size_hint: None, 0.1
+    halign: "center"
+    font_size: '20sp'
+    theme_text_color: "Custom"
+    text_color: app.theme_cls.opposite_bg_normal
+
+<MonthsManager>:
+    pos_hint: {"top": .9}
+    size_hint: 1, .8
+
+<ButtonsGrid>:
+    cols: 7
+    rows: 7
+    size_hint: 1, 1
+    pos_hint: {"top": 1}
+
+<DayAbbrLabel>:
+    text_size: self.size[0], None
+    halign: "center"
+    theme_text_color: "Custom"
+    text_color: app.theme_cls.opposite_bg_normal
+
+<DayAbbrWeekendLabel>:
+    theme_text_color: "Custom"
+    text_color: app.theme_cls.opposite_bg_normal
+    
+<DayButton>:
+    background_color: app.theme_cls.bg_normal
+    background_disabled_normal: ""
+    background_normal: ""
+    group: "day_num"
+    markup: True
+    theme_text_color: "Custom"
+    text_color: app.theme_cls.opposite_bg_normal
+    
+<DayNumWeekendButton>:
+    background_color: app.theme_cls.bg_dark 
+    markup: True
+    
+<TodayButton>:
+    background_color: app.theme_cls.accent_dark
+    markup: True

@@ -1,0 +1,111 @@
+#:kivy 2.1.0
+
+<SearchTag>:
+    icon_left: 'tag-remove'
+    md_bg_color: app.theme_cls.accent_color
+    text_color: app.theme_cls.primary_light
+    elevation: 4
+
+<EventDescription>:
+    size_hint_y: None
+    multiline: True
+    markup: True
+    height: self.texture_size[1]
+
+<CalendarEventCard>:
+    size_hint: (1, None)
+    spacing: dp(20)
+    orientation: "vertical"
+    height: self.minimum_height
+    md_bg_color: app.theme_cls.accent_dark
+
+<CalendarEventContent>:
+    orientation: "vertical"
+    size_hint: (1, None)
+    height: Window.height * .8
+    spacing: dp(10)           
+
+    MDScrollViewRefreshLayout:
+        id: refresh_layout
+        refresh_callback: root.refresh
+        root_layout: table_layout
+        size_hint: (1, 1)
+        do_scroll_x: True
+        do_scroll_y: True
+        scroll_type: ['bars', 'content']
+
+        MDGridLayout:
+            id: table_layout
+            adaptive_height: True
+            size_hint_x: 1
+            spacing: dp(20)
+            cols: 1
+
+    MDStackLayout:
+        id: stack
+        size_hint: (None, None)
+        adaptive_height: True
+        width: search.width + add_tag.width
+        pos_hint: {"center_x": .5}
+
+    MDBoxLayout:
+        id: search_box
+        orientation: "horizontal"
+        size_hint: (None, None)
+        pos_hint: {"center_x": .5}
+        adaptive_size: True
+
+        MDIconButton:
+            id: set_start_date
+            icon: "calendar-start-outline"
+            on_release: 
+                root.get_date("start")
+
+        ClickableTextFieldRound:
+            size_hint: (None, None)
+            pos_hint:{"center_x":.5}
+            size: search.size
+
+            MDTextField:
+                id: search
+                multiline: False
+                font_size: '20sp'
+                required: True
+                hint_text: "Wildcard search phrase"
+                size_hint:(None,None)
+                size: (dp(300), dp(40))
+                helper_text: "Use wildcard to filter events by summary"
+                helper_text_mode: "on_focus"
+                icon_left: "calendar-search-outline"
+                on_text_validate: 
+                    root.create_search_tag()
+
+            MDIconButton:
+                id: add_tag
+                icon: "tag-plus"
+                pos_hint: {"center_y": .5}
+                pos: search.width - self.width + dp(8), 0
+                theme_text_color: "Hint"
+                on_release:
+                    root.create_search_tag()
+
+        MDIconButton:
+            id: set_end_date
+            icon: "calendar-end-outline"
+            on_release: 
+                root.get_date("end")
+                
+    MDRectangleFlatButton:
+        text: "Close"
+        theme_text_color: "Custom"
+        text_color: app.theme_cls.primary_color
+        pos_hint: {"center_x": .5}
+        on_release:
+            root.dialog.dismiss()
+            root.asyncloader != None and root.asyncloader.cancel()
+
+<CalendarEvent>:
+    size_hint: (.8, None)
+    auto_dismiss: False
+    radius: (20, 7, 20, 7)
+    type: "custom"

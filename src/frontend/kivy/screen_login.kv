@@ -1,0 +1,147 @@
+#:kivy 2.1.0
+
+<CredentialInput>:
+    multiline: False
+    font_size: '20sp'
+    required: True
+
+<LoginWindow>:
+    name: "login"
+
+    MDBanner:
+        id: banner
+        text: []
+        over_widget: main_layout
+        vertical_pad: 0
+        type: "two-line"
+        right_action: ["CLOSE", lambda bound_instance: (self.hide(), setattr(theme_switcher, 'disabled', False))]
+
+    AnchorLayout:
+        anchor_x: "right"
+        anchor_y: "top"
+
+        MDIconButton:
+            id: theme_switcher
+            icon: "theme-light-dark"
+            theme_icon_color: "Custom"
+            icon_color: app.theme_cls.primary_color
+            on_release:
+                app.switch_theme()
+            
+    BoxLayout:
+        id: main_layout
+        orientation: 'vertical'
+        spacing: dp(10)
+        padding: dp(10)
+
+        Label:
+            size_hint:(1,.1)
+
+        MDBoxLayout:
+            orientation: "vertical"
+            size_hint: (1, None)
+            pos_hint: {'center_x':.5, }
+            adaptive_height: True
+            spacing: dp(20)
+
+            MDBoxLayout:
+                orientation: 'horizontal'
+                pos_hint: {'center_x':.5}
+                spacing: dp(10)
+                adaptive_size: True
+                size_hint: (None, None)
+
+                FitImage:
+                    id: logo
+                    #source: app.theme_cls.custom_logo 
+                    size: (dp(200), dp(200))
+                    size_hint: (None, None)
+                    text_size: self.size
+                    halign: 'right'
+                    valign: 'middle'
+
+                MDLabel:
+                    id: title
+                    text: "INTERNATIONAL\nUNIVERSITY\nOF APPLIED SCIENCES"
+                    font_size: '32sp'
+                    text_size: self.size
+                    height: self.texture_size[1]
+                    width: dp(250)
+                    size_hint: (None, None)
+                    halign: 'left'
+                    valign: 'top'
+                    theme_text_color: "Custom"
+                    text_color: app.theme_cls.opposite_bg_normal
+
+            MDLabel:
+                text: "MyCampus Mobile"
+                font_size: '36sp'
+                text_color: app.theme_cls.primary_dark
+                theme_text_color: "Custom"
+                height: self.texture_size[1]
+                text_size: self.size
+                size_hint:(1, None)
+                halign: 'center'
+                valign: 'bottom'
+
+        Label:
+            size_hint:(1,.3)
+
+        CredentialInput:
+            id: username
+            screen: root
+            hint_text: "Username"
+            pos_hint:{"center_x":.5}
+            size: (password.width, dp(40))
+            size_hint:(None,None)
+            on_text_validate: password.focus = True
+            helper_text: "Username is required!"
+            helper_text_mode: "on_error"
+            icon_left: "account"
+
+        ClickableTextFieldRound:
+            size_hint: (None, None)
+            pos_hint:{"center_x":.5}
+            size: password.size
+
+            CredentialInput:
+                id: password
+                screen: root
+                hint_text: "Password"
+                password: True
+                size_hint:(None,None)
+                size: (logo.width+title.width, dp(40))
+                on_text_validate: sign_in_btn.focus = True
+                helper_text: "Password is required!"
+                helper_text_mode: "on_error"
+                icon_left: "key-variant"
+
+            MDIconButton:
+                icon: "eye-off"
+                pos_hint: {"center_y": .5}
+                pos: password.width - self.width + dp(8), 0
+                theme_text_color: "Hint"
+                on_release:
+                    self.icon = "eye" if self.icon == "eye-off" else "eye-off"
+                    password.password = not password.password
+
+        FocusableButton:
+            id: sign_in_btn
+            icon: "login-variant"
+            text: "Sign in"
+            font_size: '20sp'
+            on_release: 
+                self.disabled = True
+                root.login()
+                self.disabled = False
+            pos_hint:{"center_x":.5}
+            size_hint:(None,None)
+            text_size: self.size
+            theme_icon_color: "Custom"
+            icon_color: app.theme_cls.primary_color
+            theme_text_color: "Custom"
+            text_color: app.theme_cls.primary_color
+            line_color: app.theme_cls.primary_color
+
+        Label:
+            size_hint:(1,.2)
