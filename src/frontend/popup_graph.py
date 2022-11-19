@@ -1,5 +1,6 @@
 # -*- coding: utf-8 -*-
 
+import traceback
 from io import BytesIO
 from pathlib import Path
 from typing import Any
@@ -103,10 +104,16 @@ class GraphDialog(MDDialog):
         buffer = BytesIO()
         plt.tight_layout()
         plt.savefig(buffer, format="png", dpi=200)
-        self.content_cls = GraphContent(
-            dialog=self,
-            core_image=CoreImage(buffer, ext="png", filename="dependency.png"),
-        )
+        try:
+            core = CoreImage(buffer, ext="png", filename="dependency.png")
+            self.content_cls = GraphContent(
+                dialog=self,
+                core_image=core,
+            )
+        except BaseException:
+            self.screen.client.debug(buffer.getvalue())
+            self.screen.client.warning(traceback.format_exc())
+            raise
         super().__init__(**kwargs)
 
     @property

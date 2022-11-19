@@ -25,6 +25,12 @@ from .screen_main import MainScreenWithTopPanel
 ###############
 
 
+DARK_LOGO = str(Path(__file__).parents[1] / "data" / "logo" / "dark.png")
+LIGHT_LOGO = str(Path(__file__).parents[1] / "data" / "logo" / "light.png")
+ICON = str(Path(__file__).parents[1] / "data" / "logo" / "icon.png")
+TITLE = "MyCampus Mobile"
+
+
 class Client:
     pass
 
@@ -97,8 +103,8 @@ class MobileApp(MDApp):
         Returns
             MDScreenManager
         """
-        self.title = "MyCampus Mobile"
-        self.icon = "icon.png"
+        self.title = TITLE
+        self.icon = ICON
 
         self.sm = WindowManager(transition=SlideTransition())
         # using monkey patching to extend properties of the client instance
@@ -120,9 +126,9 @@ class MobileApp(MDApp):
         self.theme_cls.theme_style_switch_animation = True
         self.theme_cls.theme_style_switch_animation_duration = 0.8
         if self.theme_cls.theme_style == "Dark":
-            self.theme_cls.custom_logo = "data/logo/dark.png"
+            self.theme_cls.custom_logo = DARK_LOGO
         else:
-            self.theme_cls.custom_logo = "data/logo/light.png"
+            self.theme_cls.custom_logo = LIGHT_LOGO
 
         # initialize screen instances
         self.screens["login"] = LoginWindow(name="login", app=self)
@@ -169,12 +175,12 @@ class MobileApp(MDApp):
 
         # update monkey patched properties of the client instance
         if self.theme_cls.theme_style == "Dark":
-            self.theme_cls.custom_logo = "data/logo/light.png"
+            self.theme_cls.custom_logo = LIGHT_LOGO
             self.client["theme_style"] = "Light"
             self.client["primary_palette"] = "Teal"
             self.client["accent_palette"] = "LightGreen"
         else:
-            self.theme_cls.custom_logo = "data/logo/dark.png"
+            self.theme_cls.custom_logo = DARK_LOGO
             self.client["theme_style"] = "Dark"
             self.client["primary_palette"] = "LightGreen"
             self.client["accent_palette"] = "Teal"

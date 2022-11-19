@@ -13,7 +13,7 @@ run:
 	buildozer android release deploy run logcat
 
 test:
-	python -m unittest discover -s src/backend/tests -t src -v -p test.py
+	python src/test.py
 
 dump:
 	python src/dump.py

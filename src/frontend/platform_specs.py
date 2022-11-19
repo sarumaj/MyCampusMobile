@@ -2,7 +2,15 @@
 
 import webbrowser
 
+from kivy.utils import platform
 from plyer import email, notification, storagepath
+
+if platform == "android":
+    from android.permissions import Permission, request_permissions
+
+    request_permissions(
+        [Permission.READ_EXTERNAL_STORAGE, Permission.WRITE_EXTERNAL_STORAGE]
+    )
 
 # application directory
 app_dir_path = str(storagepath.get_application_dir())

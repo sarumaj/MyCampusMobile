@@ -4,19 +4,12 @@ import os
 from pathlib import Path
 
 import certifi
-from kivy.core.window import Window
+
+from backend import Client
+from frontend import MobileApp, app_dir_path
 
 os.environ["KIVY_IMAGE"] = "pil,sdl2"
 os.environ["SSL_CERT_FILE"] = certifi.where()
-Window.size = (720, 1440)
-Window.minimum_height = 1000
-Window.minimum_width = 600
-
-# trunk-ignore(flake8/E402)
-from backend import Client
-
-# trunk-ignore(flake8/E402)
-from frontend import MobileApp, app_dir_path
 
 CLIENT = Client(
     "",
@@ -28,6 +21,19 @@ CLIENT = Client(
     destination=str(Path(app_dir_path) / ".cache.dat"),
 )
 
-if __name__ == "__main__":
+
+def main():
     app = MobileApp(CLIENT)
     app.run()
+
+
+if __name__ == "__main__":
+    from kivy.utils import platform
+
+    if platform != "android":
+        from kivy.core.window import Window
+
+        Window.size = (720, 1440)
+        Window.minimum_height = 1000
+        Window.minimum_width = 600
+    main()
