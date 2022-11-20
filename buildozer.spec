@@ -38,9 +38,11 @@ android.archs = arm64-v8a, armeabi-v7a
 android.release_artifact = apk
 android.debug_artifact = apk
 
-#
-# Python for android (p4a) specific
-#
+#####################################
+#                                   #
+# Python for android (p4a) specific #
+#                                   #
+#####################################
 
 p4a.bootstrap = sdl2
 p4a.fork = kivy
