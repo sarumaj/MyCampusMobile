@@ -13,7 +13,7 @@ run:
 	buildozer android release deploy run logcat
 
 test:
-	python src/test.py
+	python test.py
 
 dump:
-	python src/dump.py
+	python dump.py
