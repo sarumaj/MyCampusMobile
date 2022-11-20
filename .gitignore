@@ -128,7 +128,7 @@ dmypy.json
 .pyre/
 
 # buildozer
-#.buildozer
+.buildozer/**/platform/build*/**
 
 *.profile
 *.dat
