@@ -1,7 +1,0 @@
-<?xml version="1.0" encoding="utf-8"?>
-<resources>
-    <string name="app_name">MyCampus Mobil</string>
-    <string name="private_version">dd74330ac6d8a6cd7499808ffb2c4672ab97d736</string>
-    <string name="presplash_color">#000000</string>
-    <string name="urlScheme">kivy</string>
-</resources>
