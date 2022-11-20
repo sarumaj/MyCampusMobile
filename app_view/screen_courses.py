@@ -529,7 +529,7 @@ class CourseImage(AsyncImage, FitImage):
         file = Path(quote(self.source, safe=""))
         file = (
             Path(__file__).parents[1]
-            / "data"
+            / "app_data"
             / "img"
             / (hashlib.sha1(file.stem.encode()).hexdigest() + file.suffix)
         )
@@ -541,7 +541,7 @@ class CourseImage(AsyncImage, FitImage):
         file = Path(quote(self.source, safe=""))
         file = (
             Path(__file__).parents[1]
-            / "data"
+            / "app_data"
             / "img"
             / (hashlib.sha1(file.stem.encode()).hexdigest() + file.suffix)
         )

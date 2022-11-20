@@ -16,7 +16,7 @@ class __dump4mockMeta__(type):
 
     def __init__(self, *args, **kwargs):
         self._dump_class = []
-        self._mock_dir = Path(__file__).parents[1] / "data" / "mock"
+        self._mock_dir = Path(__file__).parents[1] / "app_data" / "mock"
 
     # enable/disable globally for selected class instances
     @property

@@ -24,10 +24,9 @@ from .screen_main import MainScreenWithTopPanel
 #             #
 ###############
 
-
-DARK_LOGO = str(Path(__file__).parents[1] / "data" / "logo" / "dark.png")
-LIGHT_LOGO = str(Path(__file__).parents[1] / "data" / "logo" / "light.png")
-ICON = str(Path(__file__).parents[1] / "data" / "logo" / "icon.png")
+DARK_LOGO = str(Path(__file__).parents[1] / "app_data" / "logo" / "dark.png")
+LIGHT_LOGO = str(Path(__file__).parents[1] / "app_data" / "logo" / "light.png")
+ICON = str(Path(__file__).parents[1] / "app_data" / "logo" / "icon.png")
 TITLE = "MyCampus Mobile"
 
 

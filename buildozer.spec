@@ -4,14 +4,12 @@ package.name = mycampus_mobile
 package.domain = org.github.sarumaj
 source.dir = .
 source.include_exts = py, png, jpg, kv, atlas
-source.include_patterns = data/img/*, data/logo/*
+source.include_patterns = app_data/img/*, app_data/logo/*
 source.exclude_exts = spec
 source.exclude_dirs = tests, bin, venv, mock
-#source.exclude_patterns = data/mock/*
 version.regex = __version__ = ['"](.*)['"]
 version.filename = %(source.dir)s/main.py
-# requirements.source.mycampus_mobile = %(source.dir)s/mycampus_mobile
-icon.filename = %(source.dir)s/data/logo/icon.png
+icon.filename = %(source.dir)s/app_data/logo/icon.png
 
 # (one of landscape, sensorLandscape, portrait or all)
 orientation = portrait
