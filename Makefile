@@ -3,13 +3,16 @@ SHELL=/bin/bash
 .PHONY: debug
 debug:
 	buildozer -v android debug
+	$(shell ./release.sh)
 
 .PHONY: release
 release:
 	buildozer -v android release
+	$(shell ./release.sh)
 
 adb-run-debug: debug
 	buildozer android debug deploy run logcat
+	
 
 adb-run: release
 	buildozer android release deploy run logcat
