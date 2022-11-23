@@ -37,6 +37,8 @@ android.accept_sdk_license = True
 android.archs = arm64-v8a, armeabi-v7a
 android.release_artifact = apk
 android.debug_artifact = apk
+android.api = 30
+android.minapi = 30
 
 #####################################
 #                                   #

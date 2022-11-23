@@ -35,10 +35,14 @@ Software Engineering Project for IU (www.iu-fernstudium.de)
   - [x] Light mode (**experimental!!!**)
 
 [Sign-In](doc/gif/sign_in.gif)
+
 [Course Browser](doc/gif/course_resources.gif)
+
 [Course Management](doc/gif/booking.gif)
+
 [Exam results](doc/gif/grades.gif)
-[Calendar](calendar.gif)
+
+[Calendar](doc/gif/calendar.gif)
 
 ## Deployment
 

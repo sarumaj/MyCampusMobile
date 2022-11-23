@@ -1,17 +1,17 @@
 SHELL=/bin/bash
 
-debug: bin/*.apk
+.PHONY: debug
+debug:
 	buildozer -v android debug
 
-release: bin/*aab
+.PHONY: release
+release:
 	buildozer -v android release
 
-.PHONY: adb-run-debug
-adb-run-debug:
+adb-run-debug: debug
 	buildozer android debug deploy run logcat
 
-.PHONY: adb-run
-adb-run:
+adb-run: release
 	buildozer android release deploy run logcat
 
 run: c.profile
@@ -21,5 +21,6 @@ run: c.profile
 test:
 	python test.py
 
-dump: app_data/mock/*.dump
+.PHONY: dump
+dump:
 	python dump.py
