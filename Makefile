@@ -8,11 +8,12 @@ debug:
 .PHONY: release
 release:
 	buildozer -v android release
-	$(shell ./release.sh)
+
+publish: release debug
+	$(shell ./publish.sh)
 
 adb-run-debug: debug
 	buildozer android debug deploy run logcat
-	
 
 adb-run: release
 	buildozer android release deploy run logcat
