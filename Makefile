@@ -9,7 +9,7 @@ debug:
 release:
 	buildozer -v android release
 
-publish: release debug
+publish: release
 	$(shell ./publish.sh)
 
 adb-run-debug: debug
