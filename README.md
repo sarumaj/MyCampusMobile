@@ -2,7 +2,7 @@
 
 Software Engineering Project for IU (www.iu-fernstudium.de)
 
-**MyCampusMobile** ...
+**MyCampusMobile** aims to provide seamless access to MyCampus on personal mobile device by porting available functions and extending available interfaces to enable purposeful user experience.
 
 ## Contents
 
@@ -34,9 +34,9 @@ Software Engineering Project for IU (www.iu-fernstudium.de)
   - [x] Dark mode
   - [x] Light mode (**experimental!!!**)
 
-[Sign-In](doc/gif/sign_in.gif)
+## Show cases
 
-[Course Browser](doc/gif/course_resources.gif)
+[Sign-In](doc/gif/sign_in.gif)
 
 [Course Management](doc/gif/booking.gif)
 

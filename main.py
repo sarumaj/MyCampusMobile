@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 
 
-__version__ = "1.0.2b"
+__version__ = "1.0.3"
 
 
 def main():

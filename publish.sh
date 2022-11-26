@@ -58,7 +58,6 @@ else
 fi
 echo Result: ${response}
 
-
 for i in $ASSETS_PATH/* ; do
     file_name=$(basename $i)
     echo uploading ${file_name}
