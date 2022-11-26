@@ -36,13 +36,21 @@ Software Engineering Project for IU (www.iu-fernstudium.de)
 
 ## Show cases
 
-[Sign-In](doc/gif/sign_in.gif)
+### Secure Sign-In
 
-[Course Management](doc/gif/booking.gif)
+![](doc/gif/sign_in.gif)
 
-[Exam results](doc/gif/grades.gif)
+### Course Management
 
-[Calendar](doc/gif/calendar.gif)
+![](doc/gif/booking.gif)
+
+### Exam Results Access
+
+![](doc/gif/grades.gif)
+
+### Calendar Access
+
+![](doc/gif/calendar.gif)
 
 ## Deployment
 
