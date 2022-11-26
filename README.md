@@ -2,11 +2,12 @@
 
 Software Engineering Project for IU (www.iu-fernstudium.de)
 
-**MyCampusMobile** aims to provide seamless access to MyCampus on personal mobile device by porting available functions and extending available interfaces to enable purposeful user experience.
+**MyCampusMobile** aims to provide seamless access to [MyCampus](https://mycampus.iubh.de/) on personal mobile device by porting available functions and extending available interfaces to enable purposeful user experience.
 
 ## Contents
 
 - [Features](#features)
+- [Show Cases](#show-cases)
 - [Deployment](#deployment)
 - [Testing](#testing)
 - [Unresolved issues](#unresolved-issues)
@@ -34,23 +35,23 @@ Software Engineering Project for IU (www.iu-fernstudium.de)
   - [x] Dark mode
   - [x] Light mode (**experimental!!!**)
 
-## Show cases
+## Show Cases
 
 ### Secure Sign-In
 
-![](doc/gif/sign_in.gif)
+![sign-in](doc/gif/sign_in.gif)
 
 ### Course Management
 
-![](doc/gif/booking.gif)
+![course-management](doc/gif/booking.gif)
 
 ### Exam Results Access
 
-![](doc/gif/grades.gif)
+![exam-results](doc/gif/grades.gif)
 
 ### Calendar Access
 
-![](doc/gif/calendar.gif)
+![calendar](doc/gif/calendar.gif)
 
 ## Deployment
 
