@@ -39,19 +39,19 @@ Software Engineering Project for IU (www.iu-fernstudium.de)
 
 ### Secure Sign-In
 
-[![sign-in](doc/gif/sign_in.gif)]()
+[![sign-in](doc/gif/sign_in.gif)](https://github.com/sarumaj/MyCampusMobile)
 
 ### Course Management
 
-![course-management](doc/gif/booking.gif)
+[![course-management](doc/gif/booking.gif)](https://github.com/sarumaj/MyCampusMobile)
 
 ### Exam Results Access
 
-![exam-results](doc/gif/grades.gif)
+ [![exam-results](doc/gif/grades.gif)](https://github.com/sarumaj/MyCampusMobile)
 
 ### Calendar Access
 
-![calendar](doc/gif/calendar.gif)
+[![calendar](doc/gif/calendar.gif)](https://github.com/sarumaj/MyCampusMobile)
 
 ## Deployment
 
