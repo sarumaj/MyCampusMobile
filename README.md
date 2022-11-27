@@ -39,7 +39,7 @@ Software Engineering Project for IU (www.iu-fernstudium.de)
 
 ### Secure Sign-In
 
-![sign-in](doc/gif/sign_in.gif)
+[![sign-in](doc/gif/sign_in.gif)]()
 
 ### Course Management
 
