@@ -1,7 +1,10 @@
 @startuml
 !theme spacelab
-left to right direction
+top to bottom direction
 skinparam defaultTextAlignment center
+skinparam agentFontSize 20
+skinparam arrowFontSize 18
+skinparam titleFontSize 22
 
 !define ICONURL https://raw.githubusercontent.com/tupadr3/plantuml-icon-font-sprites/v2.4.0
 
@@ -18,7 +21,6 @@ FA5_TACHOMETER_ALT(view,VIEW:Frontend,agent) #Orange;line:Orange
 
 ctrl -[#Red;thickness=4]-> model #text:red : Manipulates
 ctrl -[#Blue;thickness=4]-> view #text:blue : Renders
-view -[#DarkOrange;thickness=4]-> ctrl #text:DarkOrange : Sends requests
-view -[#DarkGreen;thickness=4]-> model #text:DarkGreen : Displays
-
+view -[#DarkOrange;thickness=4]-> ctrl #text:DarkOrange : Sends requests & updates state
+view -[#DarkGreen;thickness=4]-> model #text:DarkGreen : Displays state
 @enduml
