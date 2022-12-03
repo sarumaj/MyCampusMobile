@@ -1,0 +1,28 @@
+@startuml
+!theme spacelab
+top to bottom direction
+skinparam defaultTextAlignment center
+skinparam agentFontSize 20
+skinparam collectionsFontSize 20
+skinparam arrowFontSize 18
+skinparam titleFontSize 22
+
+!define ICONURL https://raw.githubusercontent.com/tupadr3/plantuml-icon-font-sprites/v2.4.0
+
+!includeurl ICONURL/common.puml
+!includeurl ICONURL/font-awesome-5/server.puml
+!includeurl ICONURL/font-awesome-5/tools.puml
+!includeurl ICONURL/font-awesome-5/tachometer_alt.puml
+
+title Architecture
+
+FA5_SERVER(model,MODEL:MyCampus.de,agent,black) #LightGreen;line:LightGreen
+FA5_TOOLS(ctrl,CONTROLLER:Backend,agent,white) #RoyalBlue;line:RoyalBlue
+FA5_TOOLS(fctrl,CONTROLLER:Frontend,agent,white) #RoyalBlue;line:RoyalBlue
+FA5_TACHOMETER_ALT(view,SEVERAL VIEWS:Frontend,collections) #Orange;line:Red
+
+ctrl -[#Red;thickness=4]-> model #text:red : Manipulates
+fctrl -[#Blue;thickness=4]-> view #text:blue : Renders
+view -[#DarkOrange;thickness=4]-> ctrl #text:DarkOrange : Send requests & update state
+view -[#DarkGreen;thickness=4]-> model #text:DarkGreen : Display state
+@enduml
