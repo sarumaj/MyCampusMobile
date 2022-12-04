@@ -1,0 +1,51 @@
+@startuml packages_front-end
+!theme aws-orange
+set namespaceSeparator none
+package "MyCampusMobile.app_view" as MyCampusMobile.app_view #aliceblue {
+  package "MyCampusMobile.app_view.app" as MyCampusMobile.app_view.app #aliceblue {
+  }
+  package "MyCampusMobile.app_view.calendar_toolbox" as MyCampusMobile.app_view.calendar_toolbox #aliceblue {
+  }
+  package "MyCampusMobile.app_view.calendar_widget" as MyCampusMobile.app_view.calendar_widget #aliceblue {
+  }
+  package "MyCampusMobile.app_view.platform_specs" as MyCampusMobile.app_view.platform_specs #aliceblue {
+  }
+  package "MyCampusMobile.app_view.popup_calendar" as MyCampusMobile.app_view.popup_calendar #aliceblue {
+  }
+  package "MyCampusMobile.app_view.popup_graph" as MyCampusMobile.app_view.popup_graph #aliceblue {
+  }
+  package "MyCampusMobile.app_view.popup_progress" as MyCampusMobile.app_view.popup_progress #aliceblue {
+  }
+  package "MyCampusMobile.app_view.popup_save_dialog" as MyCampusMobile.app_view.popup_save_dialog #aliceblue {
+  }
+  package "MyCampusMobile.app_view.screen_calendar" as MyCampusMobile.app_view.screen_calendar #aliceblue {
+  }
+  package "MyCampusMobile.app_view.screen_courses" as MyCampusMobile.app_view.screen_courses #aliceblue {
+  }
+  package "MyCampusMobile.app_view.screen_grades" as MyCampusMobile.app_view.screen_grades #aliceblue {
+  }
+  package "MyCampusMobile.app_view.screen_login" as MyCampusMobile.app_view.screen_login #aliceblue {
+  }
+  package "MyCampusMobile.app_view.screen_main" as MyCampusMobile.app_view.screen_main #aliceblue {
+  }
+}
+MyCampusMobile.app_view.app --> MyCampusMobile.app_view.screen_login
+MyCampusMobile.app_view.app --> MyCampusMobile.app_view.screen_main
+MyCampusMobile.app_view.calendar_widget --> MyCampusMobile.app_view.popup_calendar
+MyCampusMobile.app_view.calendar_toolbox --> MyCampusMobile.app_view.calendar_widget
+MyCampusMobile.app_view.popup_graph --> MyCampusMobile.app_view.popup_save_dialog
+MyCampusMobile.app_view.popup_save_dialog --> MyCampusMobile.app_view.platform_specs
+MyCampusMobile.app_view.screen_calendar --> MyCampusMobile.app_view.calendar_widget
+MyCampusMobile.app_view.screen_calendar --> MyCampusMobile.app_view.popup_calendar
+MyCampusMobile.app_view.screen_calendar --> MyCampusMobile.app_view.popup_save_dialog
+MyCampusMobile.app_view.screen_courses --> MyCampusMobile.app_view.popup_graph
+MyCampusMobile.app_view.screen_courses --> MyCampusMobile.app_view.popup_progress
+MyCampusMobile.app_view.screen_courses --> MyCampusMobile.app_view.popup_save_dialog
+MyCampusMobile.app_view.screen_grades --> MyCampusMobile.app_view.popup_save_dialog
+MyCampusMobile.app_view.screen_login --> MyCampusMobile.app_view.popup_progress
+MyCampusMobile.app_view.screen_main --> MyCampusMobile.app_view.platform_specs
+MyCampusMobile.app_view.screen_main --> MyCampusMobile.app_view.popup_progress
+MyCampusMobile.app_view.screen_main --> MyCampusMobile.app_view.screen_calendar
+MyCampusMobile.app_view.screen_main --> MyCampusMobile.app_view.screen_courses
+MyCampusMobile.app_view.screen_main --> MyCampusMobile.app_view.screen_grades
+@enduml

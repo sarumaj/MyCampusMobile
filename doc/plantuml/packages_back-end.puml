@@ -1,0 +1,41 @@
+@startuml
+!theme aws-orange
+set namespaceSeparator none
+package "MyCampusMobile.app_controller" as MyCampusMobile.app_controller #aliceblue {
+package "MyCampusMobile.app_controller.auth" as MyCampusMobile.app_controller.auth #aliceblue {
+}
+package "MyCampusMobile.app_controller.cache" as MyCampusMobile.app_controller.cache #aliceblue {
+}
+package "MyCampusMobile.app_controller.calendar_exporter" as MyCampusMobile.app_controller.calendar_exporter #aliceblue {
+}
+package "MyCampusMobile.app_controller.client" as MyCampusMobile.app_controller.client #aliceblue {
+}
+package "MyCampusMobile.app_controller.course_browser" as MyCampusMobile.app_controller.course_browser #aliceblue {
+}
+package "MyCampusMobile.app_controller.downloader" as MyCampusMobile.app_controller.downloader #aliceblue {
+}
+package "MyCampusMobile.app_controller.exceptions" as MyCampusMobile.app_controller.exceptions #aliceblue {
+}
+package "MyCampusMobile.app_controller.grades_reporter" as MyCampusMobile.app_controller.grades_reporter #aliceblue {
+}
+package "MyCampusMobile.app_controller.logger" as MyCampusMobile.app_controller.logger #aliceblue {
+}
+}
+
+MyCampusMobile.app_controller.auth --> MyCampusMobile.app_controller.cache
+MyCampusMobile.app_controller.auth --> MyCampusMobile.app_controller.exceptions
+MyCampusMobile.app_controller.cache --> MyCampusMobile.app_controller.logger
+MyCampusMobile.app_controller.calendar_exporter --> MyCampusMobile.app_controller.auth
+MyCampusMobile.app_controller.calendar_exporter --> MyCampusMobile.app_controller.exceptions
+MyCampusMobile.app_controller.client --> MyCampusMobile.app_controller.calendar_exporter
+MyCampusMobile.app_controller.client --> MyCampusMobile.app_controller.course_browser
+MyCampusMobile.app_controller.client --> MyCampusMobile.app_controller.downloader
+MyCampusMobile.app_controller.client --> MyCampusMobile.app_controller.grades_reporter
+MyCampusMobile.app_controller.course_browser --> MyCampusMobile.app_controller.auth
+MyCampusMobile.app_controller.course_browser --> MyCampusMobile.app_controller.exceptions
+MyCampusMobile.app_controller.downloader --> MyCampusMobile.app_controller.auth
+MyCampusMobile.app_controller.downloader --> MyCampusMobile.app_controller.exceptions
+MyCampusMobile.app_controller.exceptions --> MyCampusMobile.app_controller.logger
+MyCampusMobile.app_controller.grades_reporter --> MyCampusMobile.app_controller.auth
+MyCampusMobile.app_controller.grades_reporter --> MyCampusMobile.app_controller.exceptions
+@enduml

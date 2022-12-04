@@ -1,0 +1,126 @@
+@startuml
+set namespaceSeparator none
+class "MyCampusMobile.app_controller.auth.Authenticator" as MyCampusMobile.app_controller.auth.Authenticator #aliceblue {
+  password
+  password
+  username
+  username
+  close()
+  get_saml_request() -> str
+  get_saml_response(SAMLrequest: str) -> str
+  sign_in()
+  submit_saml_response(SAMLresponse: str)
+}
+class "MyCampusMobile.app_controller.auth.ContextManager" as MyCampusMobile.app_controller.auth.ContextManager #aliceblue {
+}
+class "MyCampusMobile.app_controller.cache.Cache" as MyCampusMobile.app_controller.cache.Cache #aliceblue {
+  conn
+  destination : NoneType, str
+  destination : str
+  get_sqlite3_thread_safety(destination: str) -> int
+  prolongate(key: str, seconds: Union[float, int])
+}
+together {
+  class "MyCampusMobile.app_controller.calendar_exporter.CalendarExporter" as MyCampusMobile.app_controller.calendar_exporter.CalendarExporter #aliceblue {
+    export_calendar() -> tuple[str, dict[str, Any]]
+  }
+  class "MyCampusMobile.app_controller.calendar_exporter.ExportEvents" as MyCampusMobile.app_controller.calendar_exporter.ExportEvents #aliceblue {
+    name
+  }
+  class "MyCampusMobile.app_controller.calendar_exporter.TimePeriod" as MyCampusMobile.app_controller.calendar_exporter.TimePeriod #aliceblue {
+    name
+  }
+}
+class "MyCampusMobile.app_controller.client.Client" as MyCampusMobile.app_controller.client.Client #aliceblue {
+}
+class "MyCampusMobile.app_controller.course_browser.CourseBrowser" as MyCampusMobile.app_controller.course_browser.CourseBrowser #aliceblue {
+  cancel()
+  create_booking_context(curriculum_entries: OrderedDict) -> OrderedDict
+  dispatch()
+  enroll()
+  get_available_credits() -> dict[str, int]
+  get_booking_id() -> str
+  get_courses_to_register(cached: bool) -> dict
+  get_curricullum_entries(passed_modules: set[str], passed_subjects: set[str]) -> OrderedDict
+  get_dependency_graph() -> nx.Graph
+  get_graded_records() -> tuple[set[str]]
+  list_course_resources(course_id: int) -> list[dict]
+  list_courses() -> list[dict]
+  update_enrolled_course_modules(curriculum_entries: OrderedDict) -> OrderedDict
+}
+class "MyCampusMobile.app_controller.downloader.Downloader" as MyCampusMobile.app_controller.downloader.Downloader #aliceblue {
+  download(link: str, cached: Optional[bool], chunk: Optional[int]) -> tuple[str, Union[bytes, Generator[bytes, None, None]], int]
+  save(filename: str, content: Union[bytes, str], destination: Optional[Path]) -> Path
+}
+together {
+  class "MyCampusMobile.app_controller.exceptions.ExceptionHandler" as MyCampusMobile.app_controller.exceptions.ExceptionHandler #aliceblue {
+    ex : Exception
+    msg : Union[dict[Exception, str], str]
+  }
+  class "<color:red>MyCampusMobile.app_controller.exceptions.RequestFailed</color>" as MyCampusMobile.app_controller.exceptions.RequestFailed #aliceblue {
+  }
+  class "<color:red>MyCampusMobile.app_controller.exceptions.SignInFailed</color>" as MyCampusMobile.app_controller.exceptions.SignInFailed #aliceblue {
+  }
+  class "<color:red>MyCampusMobile.app_controller.exceptions.SignOutFailed</color>" as MyCampusMobile.app_controller.exceptions.SignOutFailed #aliceblue {
+  }
+}
+class "MyCampusMobile.app_controller.grades_reporter.GradesReporter" as MyCampusMobile.app_controller.grades_reporter.GradesReporter #aliceblue {
+  get_grades(cached: bool) -> OrderedDict
+}
+class "MyCampusMobile.app_controller.logger.Logger" as MyCampusMobile.app_controller.logger.Logger #aliceblue {
+}
+class "requests.sessions.Session" as requests.sessions.Session #antiquewhite {
+  adapters
+  auth : NoneType
+  cert : NoneType
+  cookies : NoneType
+  headers
+  hooks
+  max_redirects : int
+  params : dict
+  proxies : dict
+  stream : bool
+  trust_env : bool
+  verify : bool
+  close()
+  delete(url)
+  get(url)
+  get_adapter(url)
+  head(url)
+  merge_environment_settings(url, proxies, stream, verify, cert)
+  mount(prefix, adapter)
+  options(url)
+  patch(url, data)
+  post(url, data, json)
+  prepare_request(request)
+  put(url, data)
+  request(method, url, params, data, headers, cookies, files, auth, timeout, allow_redirects, proxies, hooks, stream, verify, cert, json)
+  send(request)
+}
+MyCampusMobile.app_controller.auth.Authenticator --|> MyCampusMobile.app_controller.auth.ContextManager
+MyCampusMobile.app_controller.auth.Authenticator --|> MyCampusMobile.app_controller.cache.Cache
+MyCampusMobile.app_controller.cache.Cache --|> MyCampusMobile.app_controller.logger.Logger
+MyCampusMobile.app_controller.calendar_exporter.CalendarExporter --|> MyCampusMobile.app_controller.auth.Authenticator
+MyCampusMobile.app_controller.client.Client --|> MyCampusMobile.app_controller.calendar_exporter.CalendarExporter
+MyCampusMobile.app_controller.client.Client --|> MyCampusMobile.app_controller.course_browser.CourseBrowser
+MyCampusMobile.app_controller.client.Client --|> MyCampusMobile.app_controller.downloader.Downloader
+MyCampusMobile.app_controller.client.Client --|> MyCampusMobile.app_controller.grades_reporter.GradesReporter
+MyCampusMobile.app_controller.course_browser.CourseBrowser --|> MyCampusMobile.app_controller.auth.Authenticator
+MyCampusMobile.app_controller.downloader.Downloader --|> MyCampusMobile.app_controller.auth.Authenticator
+MyCampusMobile.app_controller.grades_reporter.GradesReporter --|> MyCampusMobile.app_controller.auth.Authenticator
+requests.sessions.Session --* MyCampusMobile.app_controller.auth.Authenticator : _session
+
+MyCampusMobile.app_controller.auth.ContextManager -[hidden]down-> requests.sessions.Session
+
+MyCampusMobile.app_controller.calendar_exporter.CalendarExporter -[hidden]down-> MyCampusMobile.app_controller.calendar_exporter.TimePeriod
+MyCampusMobile.app_controller.calendar_exporter.TimePeriod -[hidden]down-> MyCampusMobile.app_controller.calendar_exporter.ExportEvents
+
+MyCampusMobile.app_controller.logger.Logger -[hidden]down-> MyCampusMobile.app_controller.exceptions.ExceptionHandler
+MyCampusMobile.app_controller.exceptions.ExceptionHandler -[hidden]down-> MyCampusMobile.app_controller.exceptions.RequestFailed
+MyCampusMobile.app_controller.exceptions.RequestFailed -[hidden]down-> MyCampusMobile.app_controller.exceptions.SignInFailed
+MyCampusMobile.app_controller.exceptions.SignInFailed -[hidden]down-> MyCampusMobile.app_controller.exceptions.SignOutFailed
+
+MyCampusMobile.app_controller.calendar_exporter.CalendarExporter -[hidden]up-> MyCampusMobile.app_controller.course_browser.CourseBrowser
+MyCampusMobile.app_controller.course_browser.CourseBrowser -[hidden]up-> MyCampusMobile.app_controller.downloader.Downloader
+MyCampusMobile.app_controller.downloader.Downloader -[hidden]up-> MyCampusMobile.app_controller.grades_reporter.GradesReporter
+@enduml
