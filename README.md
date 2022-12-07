@@ -2,7 +2,9 @@
 
 Software Engineering Project for IU (www.iu-fernstudium.de)
 
-**MyCampusMobile** aims to provide seamless access to [MyCampus](https://mycampus.iubh.de/) on personal mobile device by porting available functions and extending available interfaces to enable purposeful user experience.
+**MyCampusMobile** aims to provide seamless access to [*MyCampus*](https://mycampus.iubh.de/) on personal mobile device by porting available functions and extending available interfaces to enable purposeful user experience.
+
+Project targets the [*Android 11*](https://developer.android.com/about/versions/11) platfrom and utilizes [*Buildozer*](https://buildozer.readthedocs.io/en/latest/) for packaging.
 
 ## Contents
 
@@ -13,7 +15,6 @@ Software Engineering Project for IU (www.iu-fernstudium.de)
 - [Unresolved issues](#unresolved-issues)
 
 ## Features
-
 - [x] Sign-In & Sign-Out
 - [x] Listing available & completed course modules
 - [x] Downloading course resources
@@ -47,7 +48,7 @@ Software Engineering Project for IU (www.iu-fernstudium.de)
 
 ### Exam Results Access
 
- [![exam-results](doc/gif/grades.gif)](https://github.com/sarumaj/MyCampusMobile)
+[![exam-results](doc/gif/grades.gif)](https://github.com/sarumaj/MyCampusMobile)
 
 ### Calendar Access
 
@@ -55,10 +56,13 @@ Software Engineering Project for IU (www.iu-fernstudium.de)
 
 ## Deployment
 
+Install [**Buildozer**](https://buildozer.readthedocs.io/en/latest/) according to the installation instructions [here](https://buildozer.readthedocs.io/en/latest/installation.html).
+
 Building Android Package (apk).
 
 ```bash
 git clone https://github.com/sarumaj/MyCampusMobile
+cd MyCampusMobile
 make debug
 ```
 
@@ -66,6 +70,7 @@ Building Android App Bundle (aab).
 
 ```bash
 git clone https://github.com/sarumaj/MyCampusMobile
+cd MyCampusMobile
 make release
 ```
 
@@ -76,6 +81,7 @@ In order to set up a mock environment, a _valid MyCampus student account_ is req
 
 ```bash
 git clone https://github.com/sarumaj/MyCampusMobile
+cd MyCampusMobile
 make dump
 ```
 
@@ -83,6 +89,7 @@ Run from mock environment.
 
 ```bash
 git clone https://github.com/sarumaj/MyCampusMobile
+cd MyCampusMobile
 make test
 ```
 
