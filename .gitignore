@@ -131,6 +131,12 @@ dmypy.json
 .buildozer
 bin/
 
+# VS Code
+.vscode
+
+# Trunk
+.trunk
+
 *.profile
 *.dat
 *.db
